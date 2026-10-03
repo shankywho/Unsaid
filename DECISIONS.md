@@ -30,3 +30,9 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Mock embedder = deterministic feature hashing over stemmed, stop-word-filtered tokens, so cosine ≈ token overlap. Tests run it at `EMBEDDING_DIM=256` for speed; production default stays 1536.
 - OpenAI embeddings request passes `dimensions` so `EMBEDDING_DIM` is honoured.
 - Mock TTS writes a short silent but valid MP3 so the browser audio player works in the demo.
+
+## Phase 2 — tracing, SSE, DAG
+
+- Event bus publishes locally **and** to Redis channel `unsaid:events`; each process tags its origin and ignores its own echo, so API + worker processes both feed SSE clients without duplicates.
+- `/v1/*` auth accepts `Authorization: Bearer` **or** `?api_key=` because browser `EventSource`/`<audio>` can't set headers (needed by `/debug`). Tradeoff: key may appear in access logs; acceptable for a hackathon demo key.
+- DAG runner never throws: a failed node → FAILED step, dependents → SKIPPED unless `allowFailedDeps`. Pipelines inspect results to degrade or fail the run.
