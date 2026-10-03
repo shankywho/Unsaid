@@ -1,0 +1,22 @@
+# DECISIONS
+
+Every assumption made while building Unsaid, and why. Newest phase last.
+
+## Phase 0 — contract verification & scaffold
+
+### Verified / still-assumed external contracts
+| Service | Status | Notes |
+|---|---|---|
+| Omi real-time transcript | **Partly verified** (docs.omi.me/doc/developer/apps/Integrations) | `POST <url>?uid=<uid>&session_id=<id>`; body is the segment payload; `session_id` arrives in the **query**. Spec shows `{session_id, segments:[…]}`; we accept *either* that object, a bare array of segments, or `{segments}`, with `session_id` from body or query. Segment fields (`text, speaker, speaker_id, is_user, start, end`) all optional. |
+| Omi memory webhook | **Partly verified** | `POST <url>?uid=<uid>`; body = conversation with `transcript_segments`, `structured`, `created_at`. Schema is tolerant (`passthrough`, all optional). |
+| Omi notifier | **Assumed** | `POST https://api.omi.me/v2/integrations/{app_id}/notification?uid=&message=` with `Authorization: Bearer <OMI_APP_SECRET>`. No-op when `OMI_APP_ID`/`OMI_APP_SECRET` are empty. Lives behind `OmiNotifier`. |
+| Lyzr inference | **Assumed** (docs.lyzr.ai page not reachable during build) | `POST ${LYZR_INFERENCE_URL}`, `x-api-key`, body `{user_id, agent_id, session_id, message}`; reply text read from `response` → `message` → `output`. Only `src/adapters/lyzr/httpClient.ts` needs to change if wrong. |
+| Lyzr agent creation | **Assumed** | `POST https://agent-prod.studio.lyzr.ai/v3/agents/` with `x-api-key`. `scripts/lyzr-setup.ts` falls back to printing prompts for manual Studio creation. |
+| Qdrant | Verified via official JS client | Collections + payload indexes created idempotently on boot. |
+| OpenAI embeddings / TTS | Standard public API | `/v1/embeddings`, `/v1/audio/speech` (mp3). |
+
+### Tooling choices
+- **Versions pinned deliberately:** Express 4 (spec), Prisma 6 (classic `url = env()` datasource; Prisma 7 requires driver adapters/config file), TypeScript 5.9, ESLint 9. `pnpm add` otherwise resolved to much newer majors.
+- **CommonJS output** (no `"type": "module"`): avoids `.js` import-extension noise; `tsx`/`vitest` run TS directly, `tsc` emits to `dist/`.
+- **Local ports:** this dev machine already has Postgres on 5432 and Redis on 6379, so `docker-compose.yml` host ports are overridable (`POSTGRES_PORT`, `REDIS_PORT`, `QDRANT_PORT`); the local `.env` uses 5442/6389. `.env.example` keeps the standard ports.
+- **Tests run against real docker services** (Postgres/Redis/Qdrant) but isolated: database `unsaid_test`, Redis db 1, Qdrant collections prefixed `test_`. External APIs (Lyzr/OpenAI/Omi) are always mocked in tests.

@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+storage
+eval-results/*
+!eval-results/.gitkeep
+*.log
+.DS_Store

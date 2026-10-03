@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: unsaid
+      POSTGRES_PASSWORD: unsaid
+      POSTGRES_DB: unsaid
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unsaid"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    ports: ["${REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports: ["${QDRANT_PORT:-6333}:6333"]
+    volumes: [qdrantdata:/qdrant/storage]
+volumes:
+  pgdata:
+  qdrantdata:
