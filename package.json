@@ -17,6 +17,7 @@
     "eval": "tsx scripts/eval.ts",
     "replay:omi": "tsx scripts/replay-omi.ts",
     "lyzr:setup": "tsx scripts/lyzr-setup.ts",
+    "verify:live": "tsx scripts/verify-live.ts",
     "qdrant:reset": "tsx scripts/reset-qdrant.ts",
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
