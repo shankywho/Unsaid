@@ -10,6 +10,8 @@ import { audioRouter } from './routes/audio';
 import { confirmationsRouter } from './routes/confirmations';
 import { simulateRouter } from './routes/simulate';
 import { usersRouter } from './routes/users';
+import { runsRouter } from './routes/runs';
+import { memoryRouter } from './routes/memory';
 
 export function createApp(): express.Express {
   const app = express();
@@ -17,10 +19,20 @@ export function createApp(): express.Express {
   app.use(requestId);
   app.use(express.json({ limit: '2mb' }));
   app.use(express.static(path.resolve(__dirname, '../../public')));
+  app.get('/debug', (_req, res) => res.sendFile(path.resolve(__dirname, '../../public/debug.html')));
   app.use(healthRouter);
   app.use(webhooksRouter);
   app.use(audioRouter); // /v1/audio/:id public
-  app.use('/v1', requireApiKey, streamRouter, confirmationsRouter, simulateRouter, usersRouter);
+  app.use(
+    '/v1',
+    requireApiKey,
+    streamRouter,
+    confirmationsRouter,
+    simulateRouter,
+    usersRouter,
+    runsRouter,
+    memoryRouter,
+  );
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unsaid — Caregiver & Debug Console</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --heading: #f0f6fc;
+      --accent: #58a6ff;
+      --success: #238636;
+      --success-glow: rgba(35, 134, 54, 0.4);
+      --danger: #da3633;
+      --warning: #d29922;
+      --node-bg: #21262d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; font-size: 14px; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    h1 { color: var(--heading); font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+    .status-online { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+    .status-offline { background: #da363333; color: #f85149; border: 1px solid #da3633; }
+    .grid { display: grid; grid-template-columns: 360px 1fr 340px; gap: 20px; }
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--heading); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    label { font-size: 12px; color: #8b949e; display: block; margin-bottom: 4px; font-weight: 500; }
+    input, select, textarea, button { background: #0d1117; border: 1px solid var(--border); color: var(--heading); padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 100%; margin-bottom: 12px; }
+    button { cursor: pointer; font-weight: 600; transition: 0.15s; }
+    button.primary { background: #238636; border-color: #2ea043; color: #fff; }
+    button.primary:hover { background: #2ea043; }
+    button.danger { background: #da3633; border-color: #f85149; color: #fff; }
+    button.secondary { background: #21262d; border-color: var(--border); }
+    button.secondary:hover { background: #30363d; }
+    .btn-row { display: flex; gap: 10px; }
+    .toggle-btn { padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); font-weight: bold; }
+    .toggle-on { background: #1f6feb33; color: #58a6ff; border-color: #58a6ff; }
+    .toggle-off { background: #30363d; color: #8b949e; }
+    
+    /* Confirmation Banner */
+    .confirm-box { border: 2px solid #1f6feb; border-radius: 8px; padding: 16px; background: rgba(31, 111, 235, 0.1); margin-bottom: 20px; display: none; }
+    .confirm-q { font-size: 16px; font-weight: bold; color: var(--heading); margin-bottom: 12px; }
+    .confirm-buttons { display: flex; gap: 12px; }
+    .btn-yes { background: #238636; color: white; padding: 10px; font-size: 15px; border-radius: 6px; flex: 1; border: none; cursor: pointer; }
+    .btn-no { background: #da3633; color: white; padding: 10px; font-size: 15px; border-radius: 6px; flex: 1; border: none; cursor: pointer; }
+
+    /* Timeline & DAG traces */
+    .timeline { max-height: 700px; overflow-y: auto; padding-right: 8px; }
+    .trace-item { border-left: 2px solid var(--border); padding-left: 14px; margin-bottom: 16px; position: relative; }
+    .trace-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); position: absolute; left: -6px; top: 4px; }
+    .trace-header { display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+    .trace-title { font-weight: 600; color: var(--heading); }
+    .node-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--node-bg); padding: 4px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--border); margin: 3px 0; }
+    .latency { font-size: 11px; color: #8b949e; }
+    .retrieval-bar { height: 6px; background: #58a6ff; border-radius: 3px; margin: 4px 0; }
+    .hit-item { background: #0d1117; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border); font-size: 11px; margin: 4px 0; }
+    .preview-box { background: #090d13; border: 1px solid #21262d; border-radius: 4px; padding: 6px; font-family: monospace; font-size: 11px; max-height: 80px; overflow-y: auto; color: #8b949e; margin-top: 4px; }
+
+    /* Audio section */
+    audio { width: 100%; height: 36px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><span>🗣️</span> UNSAID Caregiver & Observability Console</h1>
+      <div style="font-size: 12px; color: #8b949e; margin-top: 4px;">Stop prompting. Code solo agents — Accessibility & Adaptive Assistants</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span id="sseStatus" class="status-badge status-offline">SSE Disconnected</span>
+      <button id="toggleContext" class="toggle-btn toggle-on" onclick="toggleContext()">Context: ON</button>
+    </div>
+  </header>
+
+  <!-- Live Confirmation Bar -->
+  <div id="confirmBox" class="confirm-box">
+    <div style="font-size: 12px; color: #58a6ff; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Confirmation Needed</div>
+    <div id="confirmQuestion" class="confirm-q">Do you mean Priya shouldn't bring cake on Sunday?</div>
+    <div id="confirmFragment" style="font-size: 12px; color: #8b949e; margin-bottom: 12px;">Spoken: "Sunday Priya cake no"</div>
+    <div class="confirm-buttons">
+      <button class="btn-yes" onclick="submitAnswer('yes')">✓ YES</button>
+      <button class="btn-no" onclick="submitAnswer('no')">✕ NO</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Left Column: Settings & Testing -->
+    <div>
+      <div class="card">
+        <div class="card-title">Patient Profile & Controls</div>
+        <label>Active User</label>
+        <select id="userSelect" onchange="onUserChange()"></select>
+
+        <label>API Key</label>
+        <input id="apiKey" value="dev-key" onchange="saveApiKey()" />
+
+        <div class="btn-row">
+          <button class="secondary" onclick="createUser()">+ New Patient</button>
+          <button class="secondary" onclick="refreshUser()">Refresh</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Simulate Speech Utterance</div>
+        <label>Patient Fragment (Aphasic Speech)</label>
+        <input id="fragmentInput" value="Sunday Priya cake no" placeholder="e.g. water Ramesh yesterday..." />
+        <button class="primary" onclick="simulateFragment()">Send Fragment (Assist DAG)</button>
+
+        <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+          <label>Ambient Segment (Household / Caregiver)</label>
+          <input id="ambientInput" value="Priya is visiting on Sunday." placeholder="Ambient text..." />
+          <button class="secondary" onclick="simulateAmbient()">Inject Ambient (Ingest)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Audio Player</div>
+        <div id="audioStatus" style="font-size: 12px; color: #8b949e;">No audio loaded yet.</div>
+        <audio id="audioPlayer" controls autoplay></audio>
+      </div>
+    </div>
+
+    <!-- Center Column: Observable DAG Traces & Live Timeline -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <span>Observable Pipeline Execution (Live SSE)</span>
+          <button class="secondary" style="width: auto; padding: 4px 8px; font-size: 11px;" onclick="clearTimeline()">Clear</button>
+        </div>
+        <div id="timeline" class="timeline">
+          <div style="color: #8b949e; text-align: center; padding: 40px 0;">Awaiting pipeline runs or fragments...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Personal Memory Facts & Word Map -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <span>Personal Memory Facts (Qdrant)</span>
+          <button class="secondary" style="width: auto; padding: 4px 8px; font-size: 11px;" onclick="loadMemory()">Reload</button>
+        </div>
+        <div id="memoryList" style="max-height: 300px; overflow-y: auto;">
+          <div style="color: #8b949e; font-size: 12px;">Loading memory facts...</div>
+        </div>
+        <button class="danger" style="margin-top: 10px;" onclick="purgeMemory()">Purge User Memory</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Learned Word Map</div>
+        <div id="wordmapList" style="max-height: 250px; overflow-y: auto;">
+          <div style="color: #8b949e; font-size: 12px;">No learned patterns yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeUser = null;
+    let sseSource = null;
+    let currentConfirmationId = null;
+
+    function getApiKey() {
+      return document.getElementById('apiKey').value || 'dev-key';
+    }
+
+    function saveApiKey() {
+      localStorage.setItem('unsaid_api_key', getApiKey());
+      initSSE();
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getApiKey()}`,
+        ...(options.headers || {})
+      };
+      return fetch(url, { ...options, headers });
+    }
+
+    async function init() {
+      const savedKey = localStorage.getItem('unsaid_api_key');
+      if (savedKey) document.getElementById('apiKey').value = savedKey;
+
+      await loadUsers();
+      initSSE();
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await apiFetch('/v1/users/u_default'); // or create default
+        let user;
+        if (res.ok) {
+          const body = await res.json();
+          user = body.data;
+        } else {
+          // create a demo user
+          const createRes = await apiFetch('/v1/users', {
+            method: 'POST',
+            body: JSON.stringify({ displayName: 'Mohan Lal Sharma', caregiverName: 'Sunita' })
+          });
+          const createBody = await createRes.json();
+          user = createBody.data;
+        }
+
+        activeUser = user;
+        const select = document.getElementById('userSelect');
+        select.innerHTML = `<option value="${user.id}">${user.displayName} (${user.id.slice(0, 8)})</option>`;
+        updateContextToggle(user.contextEnabled);
+        loadMemory();
+        loadWordMap();
+      } catch (e) {
+        console.error('Error loading user:', e);
+      }
+    }
+
+    async function createUser() {
+      const name = prompt('Enter Patient Name:', 'Mohan Lal Sharma');
+      if (!name) return;
+      const res = await apiFetch('/v1/users', {
+        method: 'POST',
+        body: JSON.stringify({ displayName: name, caregiverName: 'Sunita' })
+      });
+      const data = await res.json();
+      activeUser = data.data;
+      const select = document.getElementById('userSelect');
+      const opt = document.createElement('option');
+      opt.value = activeUser.id;
+      opt.textContent = `${activeUser.displayName} (${activeUser.id.slice(0, 8)})`;
+      select.appendChild(opt);
+      select.value = activeUser.id;
+      updateContextToggle(activeUser.contextEnabled);
+      initSSE();
+      loadMemory();
+      loadWordMap();
+    }
+
+    function updateContextToggle(enabled) {
+      const btn = document.getElementById('toggleContext');
+      if (enabled) {
+        btn.className = 'toggle-btn toggle-on';
+        btn.textContent = 'Context: ON';
+      } else {
+        btn.className = 'toggle-btn toggle-off';
+        btn.textContent = 'Context: OFF';
+      }
+    }
+
+    async function toggleContext() {
+      if (!activeUser) return;
+      const newSetting = !activeUser.contextEnabled;
+      await apiFetch(`/v1/users/${activeUser.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ contextEnabled: newSetting })
+      });
+      activeUser.contextEnabled = newSetting;
+      updateContextToggle(newSetting);
+      addTimelineEvent('System', 'Ablation Toggle Changed', `Context retrieval is now ${newSetting ? 'ENABLED' : 'DISABLED'}`);
+    }
+
+    function initSSE() {
+      if (!activeUser) return;
+      if (sseSource) sseSource.close();
+
+      const url = `/v1/stream?userId=${activeUser.id}&api_key=${getApiKey()}`;
+      sseSource = new EventSource(url);
+
+      const statusBadge = document.getElementById('sseStatus');
+      sseSource.onopen = () => {
+        statusBadge.textContent = 'SSE Connected';
+        statusBadge.className = 'status-badge status-online';
+      };
+
+      sseSource.onerror = () => {
+        statusBadge.textContent = 'SSE Reconnecting...';
+        statusBadge.className = 'status-badge status-offline';
+      };
+
+      sseSource.onmessage = (e) => {
+        try {
+          const event = JSON.parse(e.data);
+          handleSSEEvent(event);
+        } catch {}
+      };
+    }
+
+    function handleSSEEvent(event) {
+      const type = event.type;
+      const d = event.data || {};
+
+      if (type === 'step.completed' || type === 'step.failed') {
+        renderStepCompleted(d, type === 'step.failed');
+      } else if (type === 'confirmation.asked') {
+        showConfirmation(d);
+      } else if (type === 'assist.resolved') {
+        hideConfirmation();
+        playAudio(d.finalAudio, `Resolved: "${d.finalSentence}"`);
+        loadWordMap();
+      } else if (type === 'confirmation.expired' || type === 'assist.unresolved') {
+        hideConfirmation();
+      } else if (type === 'memory.upserted') {
+        loadMemory();
+      } else if (type === 'wordmap.updated') {
+        loadWordMap();
+      }
+    }
+
+    function showConfirmation(data) {
+      currentConfirmationId = data.confirmationId;
+      document.getElementById('confirmBox').style.display = 'block';
+      document.getElementById('confirmQuestion').textContent = data.question;
+      if (data.questionAudio) {
+        playAudio(data.questionAudio, data.question);
+      }
+    }
+
+    function hideConfirmation() {
+      document.getElementById('confirmBox').style.display = 'none';
+      currentConfirmationId = null;
+    }
+
+    async function submitAnswer(answer) {
+      if (!currentConfirmationId) return;
+      const res = await apiFetch(`/v1/confirmations/${currentConfirmationId}/answer`, {
+        method: 'POST',
+        body: JSON.stringify({ answer })
+      });
+      const body = await res.json();
+      if (body.data?.resolved) {
+        hideConfirmation();
+      }
+    }
+
+    function playAudio(audioId, label) {
+      if (!audioId) return;
+      const player = document.getElementById('audioPlayer');
+      document.getElementById('audioStatus').textContent = label || 'Playing audio...';
+      player.src = `/v1/audio/${audioId}`;
+      player.play().catch(() => {});
+    }
+
+    async function simulateFragment() {
+      if (!activeUser) return;
+      const text = document.getElementById('fragmentInput').value;
+      if (!text) return;
+      addTimelineEvent('Pipeline Started', 'ASSIST', `Utterance: "${text}"`);
+      await apiFetch('/v1/simulate/fragment', {
+        method: 'POST',
+        body: JSON.stringify({ userId: activeUser.id, text })
+      });
+    }
+
+    async function simulateAmbient() {
+      if (!activeUser) return;
+      const text = document.getElementById('ambientInput').value;
+      if (!text) return;
+      addTimelineEvent('Pipeline Started', 'INGEST', `Ambient Speech: "${text}"`);
+      await apiFetch('/v1/simulate/segments', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: activeUser.id,
+          segments: [{ text, speaker: 'Family', isUser: false }]
+        })
+      });
+    }
+
+    function addTimelineEvent(source, title, body) {
+      const tl = document.getElementById('timeline');
+      const item = document.createElement('div');
+      item.className = 'trace-item';
+      item.innerHTML = `
+        <div class="trace-dot"></div>
+        <div class="trace-header">
+          <span class="trace-title">${source}</span>
+          <span>${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div style="font-weight: 500;">${title}</div>
+        <div class="preview-box">${body}</div>
+      `;
+      tl.prepend(item);
+    }
+
+    function renderStepCompleted(data, isFailed) {
+      const tl = document.getElementById('timeline');
+      const item = document.createElement('div');
+      item.className = 'trace-item';
+
+      let retrievalHtml = '';
+      if (Array.isArray(data.retrieval) && data.retrieval.length > 0) {
+        retrievalHtml = '<div style="margin-top:6px; font-size:11px; color:#58a6ff;">Qdrant Retrieval Hits:</div>';
+        for (const h of data.retrieval) {
+          const pct = Math.min(100, Math.round((h.score || 0) * 100));
+          retrievalHtml += `
+            <div class="hit-item">
+              <div style="display:flex; justify-content:space-between;">
+                <b>${h.type || h.kind || 'fact'}:</b>
+                <span>score: ${h.score}</span>
+              </div>
+              <div>${h.text || h.resolvedSentence || ''}</div>
+              <div class="retrieval-bar" style="width: ${pct}%;"></div>
+            </div>
+          `;
+        }
+      }
+
+      item.innerHTML = `
+        <div class="trace-dot" style="background: ${isFailed ? '#da3633' : '#238636'}"></div>
+        <div class="trace-header">
+          <span class="node-pill">Node: <b>${data.node}</b></span>
+          <span class="latency">${data.latencyMs ?? 0}ms</span>
+        </div>
+        ${retrievalHtml}
+        ${data.outputPreview ? `<div class="preview-box">${data.outputPreview}</div>` : ''}
+      `;
+      tl.prepend(item);
+    }
+
+    function clearTimeline() {
+      document.getElementById('timeline').innerHTML = '';
+    }
+
+    async function loadMemory() {
+      if (!activeUser) return;
+      try {
+        const res = await apiFetch(`/v1/memory?userId=${activeUser.id}`);
+        const data = await res.json();
+        const list = document.getElementById('memoryList');
+        const facts = data.data || [];
+        if (facts.length === 0) {
+          list.innerHTML = '<div style="color: #8b949e; font-size: 12px;">No facts stored yet.</div>';
+          return;
+        }
+        list.innerHTML = facts.map((f) => `
+          <div class="hit-item" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div>
+              <span style="color: #58a6ff; font-weight: 600;">[${f.type}]</span> ${f.text}
+              <div style="color: #8b949e; font-size: 10px;">Mentions: ${f.mentions || 1} • Conf: ${(f.confidence || 0).toFixed(2)}</div>
+            </div>
+            <button style="width: auto; padding: 2px 6px; font-size: 10px; margin: 0;" class="danger" onclick="deleteFact('${f.id}')">✕</button>
+          </div>
+        `).join('');
+      } catch {}
+    }
+
+    async function deleteFact(pointId) {
+      if (!activeUser) return;
+      await apiFetch(`/v1/memory/${pointId}?userId=${activeUser.id}`, { method: 'DELETE' });
+      loadMemory();
+    }
+
+    async function purgeMemory() {
+      if (!activeUser || !confirm('Purge all memory facts for this user?')) return;
+      await apiFetch('/v1/memory/purge', {
+        method: 'POST',
+        body: JSON.stringify({ userId: activeUser.id })
+      });
+      loadMemory();
+      loadWordMap();
+    }
+
+    async function loadWordMap() {
+      if (!activeUser) return;
+      try {
+        const res = await apiFetch(`/v1/users/${activeUser.id}/wordmap`);
+        const data = await res.json();
+        const list = document.getElementById('wordmapList');
+        const subs = data.data?.substitutions || [];
+        const resolved = data.data?.resolvedUtterances || [];
+
+        if (subs.length === 0 && resolved.length === 0) {
+          list.innerHTML = '<div style="color: #8b949e; font-size: 12px;">No learned patterns yet.</div>';
+          return;
+        }
+
+        let html = '';
+        if (resolved.length > 0) {
+          html += '<div style="font-size:11px; color:#58a6ff; font-weight:600; margin-bottom:4px;">Resolved Utterances:</div>';
+          for (const r of resolved) {
+            html += `<div class="hit-item">"${r.fragment}" ➔ <b>${r.resolvedSentence}</b> (hits: ${r.hits || 1})</div>`;
+          }
+        }
+        if (subs.length > 0) {
+          html += '<div style="font-size:11px; color:#58a6ff; font-weight:600; margin: 8px 0 4px 0;">Learned Substitutions:</div>';
+          for (const s of subs) {
+            html += `<div class="hit-item">"${s.saidToken}" ➔ <b>"${s.meantToken}"</b> (${s.hits} hits)</div>`;
+          }
+        }
+        list.innerHTML = html;
+      } catch {}
+    }
+
+    init();
+  </script>
+</body>
+</html>

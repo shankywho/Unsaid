@@ -67,6 +67,13 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Feedback loop: Learner agent runs asynchronously upon confirmation, extracting substitutions and aliases. On subsequent utterances of the same fragment, the learned resolved utterance is prioritized by the hypothesizer with high confidence as hypothesis #1.
 - `GET /v1/users/:id/wordmap` provides unified listing of substitutions and resolved utterances.
 
+## Phase 7 — Runs, memory/privacy routes, simulation, and debug console
+
+- Caregiver & debug UI (`public/debug.html` served at `/debug`): includes live SSE DAG timeline with node-level latency and retrieval score bars, Yes/No confirmation controls, `<audio>` auto-player, and an interactive context ON/OFF toggle for live ablation demonstrations.
+- Granular privacy controls: `DELETE /v1/memory/:pointId` removes specific facts and `POST /v1/memory/purge` completely clears a user's memory and word map collections in Qdrant.
+- Step-level observability: `GET /v1/runs/:id` surfaces individual node execution statuses, latencies, sanitized inputs/outputs, and Qdrant retrieval hits with cosine scores.
+
+
 
 
 
