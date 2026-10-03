@@ -9,6 +9,7 @@ import { webhooksRouter } from './routes/webhooks';
 import { audioRouter } from './routes/audio';
 import { confirmationsRouter } from './routes/confirmations';
 import { simulateRouter } from './routes/simulate';
+import { usersRouter } from './routes/users';
 
 export function createApp(): express.Express {
   const app = express();
@@ -19,7 +20,7 @@ export function createApp(): express.Express {
   app.use(healthRouter);
   app.use(webhooksRouter);
   app.use(audioRouter); // /v1/audio/:id public
-  app.use('/v1', requireApiKey, streamRouter, confirmationsRouter, simulateRouter);
+  app.use('/v1', requireApiKey, streamRouter, confirmationsRouter, simulateRouter, usersRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

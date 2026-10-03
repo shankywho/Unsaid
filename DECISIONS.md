@@ -61,5 +61,12 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Context ablation mode cleanly skips both memory and wordmap retrieval DAG nodes when `contextEnabled=false`, leaving evidenceIds empty.
 - Audio streaming endpoint `GET /v1/audio/:id` serves MP3 files without authentication so browser `<audio>` tags and debug tools can play them without header limitations.
 
+## Phase 6 — LEARN pipeline and word map
+
+- Dual-write word map: `unsaid_wordmap` Qdrant collection stores dense vectors for fast semantic matching of recurring fragments, while PostgreSQL `WordMapEntry` maintains hits count and fast listing for the caregiver UI.
+- Feedback loop: Learner agent runs asynchronously upon confirmation, extracting substitutions and aliases. On subsequent utterances of the same fragment, the learned resolved utterance is prioritized by the hypothesizer with high confidence as hypothesis #1.
+- `GET /v1/users/:id/wordmap` provides unified listing of substitutions and resolved utterances.
+
+
 
 
