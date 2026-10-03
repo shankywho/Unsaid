@@ -44,3 +44,12 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - `MockLyzrClient` implements deterministic, context-sensitive handlers for all 7 agents to support CI/offline testing, word-map learning verification, and context ON vs OFF ablation.
 - `scripts/lyzr-setup.ts` attempts creation via Lyzr API when `LYZR_API_KEY` is present, or prints an explicit manual setup table and `.env` template if unconfigured or API fails.
 
+## Phase 4 — INGEST pipeline, memory store, Omi webhooks
+
+- Universal Query API (`qdrant.query`) used with `@qdrant/js-client-rest` v1.19.0.
+- Strict multi-tenant safety: every Qdrant query, update, and deletion is constrained with `{ key: 'userId', match: { value: userId } }`.
+- Fact dedup merges facts with cosine score >= 0.92, uniting entities, aliases, and sourceSegmentIds while incrementing mention count.
+- Recency reranking calculates an exponential decay with a 7-day half-life and drops facts past `validUntil`.
+- Omi webhooks accept flexible formats, write to `RawWebhook` without throwing 500s, and buffer ambient segments in Redis for batched INGEST DAG execution via BullMQ.
+
+

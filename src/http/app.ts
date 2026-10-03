@@ -5,6 +5,7 @@ import { errorHandler, notFoundHandler } from './middleware/error';
 import { healthRouter } from './routes/health';
 import { requireApiKey } from './middleware/auth';
 import { streamRouter } from './routes/stream';
+import { webhooksRouter } from './routes/webhooks';
 
 export function createApp(): express.Express {
   const app = express();
@@ -13,8 +14,10 @@ export function createApp(): express.Express {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.static(path.resolve(__dirname, '../../public')));
   app.use(healthRouter);
+  app.use(webhooksRouter);
   app.use('/v1', requireApiKey, streamRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
 }
+
