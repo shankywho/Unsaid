@@ -4,7 +4,9 @@ import { AppError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 
 export const notFoundHandler: RequestHandler = (req, res) => {
-  res.status(404).json({ error: { code: 'not_found', message: 'route not found', requestId: req.requestId } });
+  res
+    .status(404)
+    .json({ error: { code: 'not_found', message: 'route not found', requestId: req.requestId } });
 };
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {

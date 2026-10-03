@@ -6,3 +6,175 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  PATIENT
+}
+
+enum AssistMode {
+  AUTO
+  ON
+  OFF
+}
+
+enum SegmentSource {
+  OMI_REALTIME
+  OMI_MEMORY
+  SIMULATED
+}
+
+enum SegmentKind {
+  UNCLASSIFIED
+  AMBIENT
+  FRAGMENT
+  FLUENT
+  CONFIRMATION_REPLY
+  NOISE
+}
+
+enum PipelineKind {
+  ASSIST
+  INGEST
+  LEARN
+}
+
+enum RunStatus {
+  RUNNING
+  AWAITING_CONFIRMATION
+  SUCCEEDED
+  FAILED
+}
+
+enum StepStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum ConfirmationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED_ALL
+  EXPIRED
+}
+
+enum WordMapKind {
+  SUBSTITUTION
+  PHRASE
+  NAME_ALIAS
+}
+
+model User {
+  id             String              @id @default(cuid())
+  omiUid         String?             @unique
+  displayName    String
+  role           UserRole            @default(PATIENT)
+  contextEnabled Boolean             @default(true) // ablation + privacy toggle
+  assistMode     AssistMode          @default(AUTO)
+  caregiverName  String?
+  createdAt      DateTime            @default(now())
+  segments       TranscriptSegment[]
+  runs           Run[]
+  confirmations  Confirmation[]
+  wordMapEntries WordMapEntry[]
+}
+
+model TranscriptSegment {
+  id        String        @id @default(cuid())
+  userId    String
+  sessionId String
+  text      String
+  speaker   String?
+  isUser    Boolean
+  startSec  Float?
+  endSec    Float?
+  source    SegmentSource
+  kind      SegmentKind   @default(UNCLASSIFIED)
+  // sha1(sessionId|startSec|text): Omi may resend segments
+  dedupeKey String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+}
+
+model Run {
+  id          String       @id @default(cuid())
+  userId      String
+  pipeline    PipelineKind
+  status      RunStatus
+  input       Json
+  output      Json?
+  contextUsed Boolean
+  startedAt   DateTime     @default(now())
+  endedAt     DateTime?
+  steps       Step[]
+  user        User         @relation(fields: [userId], references: [id])
+
+  @@index([userId, startedAt])
+}
+
+model Step {
+  id        String     @id @default(cuid())
+  runId     String
+  node      String
+  agentId   String?
+  status    StepStatus
+  input     Json
+  output    Json?
+  error     String?
+  retrieval Json?
+  latencyMs Int?
+  attempt   Int        @default(1)
+  startedAt DateTime   @default(now())
+  endedAt   DateTime?
+  run       Run        @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+}
+
+model Confirmation {
+  id            String             @id @default(cuid())
+  userId        String
+  runId         String             @unique
+  fragment      String
+  hypotheses    Json
+  currentIndex  Int                @default(0)
+  question      String
+  questionAudio String?
+  status        ConfirmationStatus
+  confirmedIdx  Int?
+  finalSentence String?
+  finalAudio    String?
+  resolution    String? // e.g. "superseded", "timeout"
+  createdAt     DateTime           @default(now())
+  resolvedAt    DateTime?
+  user          User               @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+}
+
+model WordMapEntry {
+  id         String      @id @default(cuid())
+  userId     String
+  saidToken  String
+  meantToken String
+  kind       WordMapKind
+  hits       Int         @default(1)
+  lastSeenAt DateTime    @default(now())
+  qdrantId   String
+  user       User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, saidToken, meantToken])
+}
+
+model RawWebhook {
+  id        String   @id @default(cuid())
+  route     String
+  query     Json
+  body      Json
+  parsedOk  Boolean
+  createdAt DateTime @default(now())
+}
