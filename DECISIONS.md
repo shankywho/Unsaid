@@ -52,4 +52,14 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Recency reranking calculates an exponential decay with a 7-day half-life and drops facts past `validUntil`.
 - Omi webhooks accept flexible formats, write to `RawWebhook` without throwing 500s, and buffer ambient segments in Redis for batched INGEST DAG execution via BullMQ.
 
+## Phase 5 — ASSIST pipeline, confirmation state machine, TTS, audio route
+
+- Parallel DAG execution: memory retrieval and wordmap retrieval run simultaneously.
+- Regex fast-path for pending confirmations classifies affirmative and negative replies locally, avoiding LLM latency.
+- Confirmation state machine supports Yes/No progressions up to 3 candidate hypotheses before degrading to a fallback categorical question.
+- Superseding logic: a new fragment spoken while a confirmation is already pending marks the earlier confirmation as EXPIRED with reason `superseded`.
+- Context ablation mode cleanly skips both memory and wordmap retrieval DAG nodes when `contextEnabled=false`, leaving evidenceIds empty.
+- Audio streaming endpoint `GET /v1/audio/:id` serves MP3 files without authentication so browser `<audio>` tags and debug tools can play them without header limitations.
+
+
 

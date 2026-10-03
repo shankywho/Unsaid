@@ -6,6 +6,9 @@ import { healthRouter } from './routes/health';
 import { requireApiKey } from './middleware/auth';
 import { streamRouter } from './routes/stream';
 import { webhooksRouter } from './routes/webhooks';
+import { audioRouter } from './routes/audio';
+import { confirmationsRouter } from './routes/confirmations';
+import { simulateRouter } from './routes/simulate';
 
 export function createApp(): express.Express {
   const app = express();
@@ -15,9 +18,11 @@ export function createApp(): express.Express {
   app.use(express.static(path.resolve(__dirname, '../../public')));
   app.use(healthRouter);
   app.use(webhooksRouter);
-  app.use('/v1', requireApiKey, streamRouter);
+  app.use(audioRouter); // /v1/audio/:id public
+  app.use('/v1', requireApiKey, streamRouter, confirmationsRouter, simulateRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
 }
+
 

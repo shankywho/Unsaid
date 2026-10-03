@@ -7,6 +7,7 @@ import { bus } from '../../tracing/events';
 import { parseTranscriptBody, parseMemoryBody } from '../../adapters/omi/schemas';
 import { bufferSegment } from '../../queues/ingestQueue';
 import { runIngestPipeline } from '../../orchestrator/ingestPipeline';
+import { runAssistPipeline } from '../../orchestrator/assistPipeline';
 
 export const webhooksRouter = Router();
 
@@ -81,8 +82,14 @@ webhooksRouter.post('/webhooks/omi/transcript', async (req, res) => {
 
     bus.publish('segment.received', user.id, { text, isUser, sessionId, dedupeKey });
 
-    // Non-patient speech is buffered for ingest
-    if (!isUser) {
+    if (isUser) {
+      await runAssistPipeline({
+        userId: user.id,
+        text,
+        sessionId,
+        source: 'OMI_REALTIME',
+      });
+    } else {
       await bufferSegment(user.id, sessionId, {
         text,
         speaker: seg.speaker,
