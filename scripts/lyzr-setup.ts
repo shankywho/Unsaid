@@ -1,0 +1,152 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { env } from '../src/config/env';
+import { AGENT_NAMES, type AgentName } from '../src/agents/names';
+import { fetchRetry } from '../src/lib/http';
+
+interface AgentSpec {
+  name: AgentName;
+  envVar: string;
+  temperature: number;
+  description: string;
+}
+
+const AGENT_SPECS: Record<AgentName, AgentSpec> = {
+  utterance_classifier: {
+    name: 'utterance_classifier',
+    envVar: 'LYZR_AGENT_UTTERANCE_CLASSIFIER_ID',
+    temperature: 0.2,
+    description: 'Classifies patient speech into FRAGMENT, FLUENT, CONFIRMATION_REPLY, or NOISE',
+  },
+  fragment_analyst: {
+    name: 'fragment_analyst',
+    envVar: 'LYZR_AGENT_FRAGMENT_ID',
+    temperature: 0.2,
+    description: 'Extracts keywords, entities, speech acts, and generates memory search queries',
+  },
+  context_extractor: {
+    name: 'context_extractor',
+    envVar: 'LYZR_AGENT_CONTEXT_EXTRACTOR_ID',
+    temperature: 0.2,
+    description: 'Extracts structured personal facts from ambient conversation windows',
+  },
+  intent_hypothesizer: {
+    name: 'intent_hypothesizer',
+    envVar: 'LYZR_AGENT_HYPOTHESIS_ID',
+    temperature: 0.5,
+    description: 'Generates 3 ranked hypotheses explaining the fragment using retrieved facts',
+  },
+  confirmation_composer: {
+    name: 'confirmation_composer',
+    envVar: 'LYZR_AGENT_CONFIRM_ID',
+    temperature: 0.2,
+    description: 'Composes warm, concise Yes/No questions and final spoken sentences',
+  },
+  learner: {
+    name: 'learner',
+    envVar: 'LYZR_AGENT_LEARNER_ID',
+    temperature: 0.2,
+    description: 'Extracts personal vocabulary substitutions and word-map patterns from confirmed intent',
+  },
+  eval_judge: {
+    name: 'eval_judge',
+    envVar: 'LYZR_AGENT_EVAL_JUDGE_ID',
+    temperature: 0.1,
+    description: 'Evaluates hypothesis correctness against gold-standard intent in eval suite',
+  },
+};
+
+async function tryCreateLyzrAgent(
+  spec: AgentSpec,
+  prompt: string,
+): Promise<{ ok: boolean; agentId?: string; error?: string }> {
+  if (!env.LYZR_API_KEY) {
+    return { ok: false, error: 'LYZR_API_KEY is not set' };
+  }
+
+  try {
+    const res = await fetchRetry('https://agent-prod.studio.lyzr.ai/v3/agents/', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': env.LYZR_API_KEY,
+      },
+      body: JSON.stringify({
+        name: `Unsaid - ${spec.name}`,
+        description: spec.description,
+        system_prompt: prompt,
+        temperature: spec.temperature,
+        model: 'gpt-4o',
+      }),
+      timeoutMs: 15_000,
+    });
+
+    if (res.ok) {
+      const data: any = await res.json();
+      const id = data.agent_id || data.id || data.data?.agent_id;
+      if (id) return { ok: true, agentId: id };
+    }
+    const text = await res.text();
+    return { ok: false, error: `API status ${res.status}: ${text.slice(0, 200)}` };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
+
+export async function main(): Promise<void> {
+  console.log('=====================================================');
+  console.log('  UNSAID — Lyzr Agent Provisioning & Configuration   ');
+  console.log('=====================================================\n');
+
+  const promptsDir = path.resolve(__dirname, '../src/agents/prompts');
+  const results: Record<string, string> = {};
+
+  for (const name of AGENT_NAMES) {
+    const spec = AGENT_SPECS[name];
+    const promptPath = path.join(promptsDir, `${name}.md`);
+    let prompt = '';
+    if (fs.existsSync(promptPath)) {
+      prompt = fs.readFileSync(promptPath, 'utf8');
+    } else {
+      console.warn(`Warning: prompt file missing at ${promptPath}`);
+    }
+
+    console.log(`\n• Agent: ${spec.name}`);
+    console.log(`  Target Env Var: ${spec.envVar}`);
+    console.log(`  Recommended Temp: ${spec.temperature}`);
+    console.log(`  Description: ${spec.description}`);
+
+    if (env.LYZR_API_KEY) {
+      console.log('  Attempting automated creation via Lyzr Studio API...');
+      const outcome = await tryCreateLyzrAgent(spec, prompt);
+      if (outcome.ok && outcome.agentId) {
+        console.log(`  ✓ Successfully created! Agent ID: ${outcome.agentId}`);
+        results[spec.envVar] = outcome.agentId;
+        continue;
+      } else {
+        console.log(`  ⚠ Automated creation failed: ${outcome.error}`);
+        console.log('  -> Fallback to manual setup in Lyzr Studio (see below).');
+      }
+    } else {
+      console.log('  (LYZR_API_KEY empty: skipping API call, use Lyzr Studio for manual setup)');
+    }
+
+    results[spec.envVar] = `<paste_${spec.name}_agent_id_here>`;
+  }
+
+  console.log('\n=====================================================');
+  console.log('  Setup Summary & .env configuration                 ');
+  console.log('=====================================================\n');
+  console.log('Paste the following agent IDs into your .env file:\n');
+  for (const [envVar, val] of Object.entries(results)) {
+    console.log(`${envVar}=${val}`);
+  }
+  console.log('\nPrompt source files reside in: src/agents/prompts/*.md\n');
+}
+
+if (require.main === module) {
+  main().catch((e) => {
+    console.error('Error during Lyzr setup:', e);
+    process.exit(1);
+  });
+}

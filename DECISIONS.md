@@ -36,3 +36,11 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Event bus publishes locally **and** to Redis channel `unsaid:events`; each process tags its origin and ignores its own echo, so API + worker processes both feed SSE clients without duplicates.
 - `/v1/*` auth accepts `Authorization: Bearer` **or** `?api_key=` because browser `EventSource`/`<audio>` can't set headers (needed by `/debug`). Tradeoff: key may appear in access logs; acceptable for a hackathon demo key.
 - DAG runner never throws: a failed node → FAILED step, dependents → SKIPPED unless `allowFailedDeps`. Pipelines inspect results to degrade or fail the run.
+
+## Phase 3 — agents, schemas, runAgent, lyzr-setup
+
+- All 7 agent system prompts stored in `src/agents/prompts/<name>.md` as markdown source of truth.
+- `runAgent` handles markdown code-fence removal (` ```json `), schema validation via Zod, and 1 automated repair prompt on parse failure before bubbling `AGENT_PARSE_ERROR`.
+- `MockLyzrClient` implements deterministic, context-sensitive handlers for all 7 agents to support CI/offline testing, word-map learning verification, and context ON vs OFF ablation.
+- `scripts/lyzr-setup.ts` attempts creation via Lyzr API when `LYZR_API_KEY` is present, or prints an explicit manual setup table and `.env` template if unconfigured or API fails.
+
