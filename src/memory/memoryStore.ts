@@ -5,14 +5,7 @@ import { newId } from '../lib/ids';
 import { logger } from '../lib/logger';
 
 export type FactType =
-  | 'person'
-  | 'relationship'
-  | 'event'
-  | 'routine'
-  | 'preference'
-  | 'place'
-  | 'object'
-  | 'health_instruction';
+  'person' | 'relationship' | 'event' | 'routine' | 'preference' | 'place' | 'object' | 'health_instruction';
 
 export interface MemoryPayload {
   userId: string;
@@ -236,10 +229,7 @@ export async function deleteMemoryFact(userId: string, pointId: string): Promise
   await qdrant.delete(collections.memory, {
     wait: true,
     filter: {
-      must: [
-        { key: 'userId', match: { value: userId } },
-        { has_id: [pointId] },
-      ],
+      must: [{ key: 'userId', match: { value: userId } }, { has_id: [pointId] }],
     },
   });
 }

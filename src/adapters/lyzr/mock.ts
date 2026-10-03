@@ -87,22 +87,29 @@ export class MockLyzrClient implements LyzrClient {
         const queries: string[] = [];
 
         if (/priya/i.test(text)) queries.push('Priya visiting Sunday', 'Priya daughter Pune');
-        if (/cake|sugar|sweet|mithai/i.test(text)) queries.push('cake sugar restriction Dr. Mehta', 'no sugar diet');
+        if (/cake|sugar|sweet|mithai/i.test(text))
+          queries.push('cake sugar restriction Dr. Mehta', 'no sugar diet');
         if (/water|bill|ramesh/i.test(text)) queries.push('water bill Ramesh', 'utilities payment');
-        if (/glasses|specs|chashma|eyes|broken/i.test(text)) queries.push('reading glasses repair optician', 'optical store pickup');
+        if (/glasses|specs|chashma|eyes|broken/i.test(text))
+          queries.push('reading glasses repair optician', 'optical store pickup');
         if (/car|park|walk|six|6/i.test(text)) queries.push('evening walk park 6 PM', 'routine exercise');
-        if (/aarav|cricket|bat|match/i.test(text)) queries.push('Aarav cricket tournament match Saturday', 'school cricket');
-        if (/physio|thursday|arm/i.test(text)) queries.push('physiotherapy Thursday 11 AM', 'arm exercises stroke mobility');
+        if (/aarav|cricket|bat|match/i.test(text))
+          queries.push('Aarav cricket tournament match Saturday', 'school cricket');
+        if (/physio|thursday|arm/i.test(text))
+          queries.push('physiotherapy Thursday 11 AM', 'arm exercises stroke mobility');
         if (/shawl|blue/i.test(text)) queries.push('blue shawl chair', 'warm clothes');
-        if (/temple|tuesday/i.test(text)) queries.push('Tuesday morning temple visit Hanuman', 'temple with Ramesh');
-        if (/radio|song|battery/i.test(text)) queries.push('vintage radio batteries afternoon songs', 'Hindi music');
+        if (/temple|tuesday/i.test(text))
+          queries.push('Tuesday morning temple visit Hanuman', 'temple with Ramesh');
+        if (/radio|song|battery/i.test(text))
+          queries.push('vintage radio batteries afternoon songs', 'Hindi music');
 
         if (queries.length === 0) {
           queries.push(text, tokens.slice(0, 3).join(' '));
         }
 
         const possibleSubstitutions: Array<{ said: string; maybe: string[] }> = [];
-        if (/\bcar\b/i.test(text)) possibleSubstitutions.push({ said: 'car', maybe: ['walk', 'bus', 'park'] });
+        if (/\bcar\b/i.test(text))
+          possibleSubstitutions.push({ said: 'car', maybe: ['walk', 'bus', 'park'] });
         if (/\bpri\b/i.test(text)) possibleSubstitutions.push({ said: 'Pri', maybe: ['Priya'] });
 
         return JSON.stringify({
@@ -237,7 +244,9 @@ export class MockLyzrClient implements LyzrClient {
         const wordMapHits: any[] = Array.isArray(input.wordMapHits) ? input.wordMapHits : [];
 
         // 1. Check if word-map has a learned resolved_utterance
-        const resolvedHit = wordMapHits.find((h) => h.resolvedSentence || (h.payload && h.payload.resolvedSentence));
+        const resolvedHit = wordMapHits.find(
+          (h) => h.resolvedSentence || (h.payload && h.payload.resolvedSentence),
+        );
         if (resolvedHit) {
           const sent = resolvedHit.resolvedSentence || resolvedHit.payload?.resolvedSentence;
           return JSON.stringify({
@@ -373,7 +382,10 @@ export class MockLyzrClient implements LyzrClient {
             });
           }
 
-          if (fragment.includes('car') || (fragment.includes('walk') && (fragment.includes('park') || fragment.includes('6')))) {
+          if (
+            fragment.includes('car') ||
+            (fragment.includes('walk') && (fragment.includes('park') || fragment.includes('6')))
+          ) {
             return JSON.stringify({
               hypotheses: [
                 {
@@ -621,7 +633,12 @@ export class MockLyzrClient implements LyzrClient {
             });
           }
 
-          if (fragment.includes('sugar') || fragment.includes('sweet') || fragment.includes('mithai') || fragment.includes('mehta')) {
+          if (
+            fragment.includes('sugar') ||
+            fragment.includes('sweet') ||
+            fragment.includes('mithai') ||
+            fragment.includes('mehta')
+          ) {
             return JSON.stringify({
               hypotheses: [
                 {
@@ -697,8 +714,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Direct drinking water request',
               },
-              { intent: 'Thirsty', sentence: 'I am feeling thirsty.', speaker_perspective_question: 'Are you thirsty?', confidence: 0.1, evidenceIds: [], reasoning: 'Thirsty' },
-              { intent: 'Help', sentence: 'I need some help.', speaker_perspective_question: 'Do you need help?', confidence: 0.05, evidenceIds: [], reasoning: 'Help' },
+              {
+                intent: 'Thirsty',
+                sentence: 'I am feeling thirsty.',
+                speaker_perspective_question: 'Are you thirsty?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Thirsty',
+              },
+              {
+                intent: 'Help',
+                sentence: 'I need some help.',
+                speaker_perspective_question: 'Do you need help?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Help',
+              },
             ],
           });
         }
@@ -714,8 +745,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Rest in bed request',
               },
-              { intent: 'Sleep now', sentence: 'I want to go to sleep.', speaker_perspective_question: 'Do you want to sleep?', confidence: 0.1, evidenceIds: [], reasoning: 'Sleep' },
-              { intent: 'Lie down', sentence: 'Can I lie down for a while?', speaker_perspective_question: 'Do you want to lie down?', confidence: 0.05, evidenceIds: [], reasoning: 'Lie down' },
+              {
+                intent: 'Sleep now',
+                sentence: 'I want to go to sleep.',
+                speaker_perspective_question: 'Do you want to sleep?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Sleep',
+              },
+              {
+                intent: 'Lie down',
+                sentence: 'Can I lie down for a while?',
+                speaker_perspective_question: 'Do you want to lie down?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Lie down',
+              },
             ],
           });
         }
@@ -731,8 +776,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Fan off request',
               },
-              { intent: 'Cold', sentence: 'It is too cold in the room.', speaker_perspective_question: 'Is it cold?', confidence: 0.1, evidenceIds: [], reasoning: 'Cold' },
-              { intent: 'Blanket', sentence: 'Please give me a blanket.', speaker_perspective_question: 'Do you want a blanket?', confidence: 0.05, evidenceIds: [], reasoning: 'Blanket' },
+              {
+                intent: 'Cold',
+                sentence: 'It is too cold in the room.',
+                speaker_perspective_question: 'Is it cold?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Cold',
+              },
+              {
+                intent: 'Blanket',
+                sentence: 'Please give me a blanket.',
+                speaker_perspective_question: 'Do you want a blanket?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Blanket',
+              },
             ],
           });
         }
@@ -748,8 +807,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Open window request',
               },
-              { intent: 'Fresh air', sentence: 'I need fresh air.', speaker_perspective_question: 'Do you want fresh air?', confidence: 0.1, evidenceIds: [], reasoning: 'Air' },
-              { intent: 'Look outside', sentence: 'I want to look outside.', speaker_perspective_question: 'Do you want to look out the window?', confidence: 0.05, evidenceIds: [], reasoning: 'Look' },
+              {
+                intent: 'Fresh air',
+                sentence: 'I need fresh air.',
+                speaker_perspective_question: 'Do you want fresh air?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Air',
+              },
+              {
+                intent: 'Look outside',
+                sentence: 'I want to look outside.',
+                speaker_perspective_question: 'Do you want to look out the window?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Look',
+              },
             ],
           });
         }
@@ -765,8 +838,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Headache medicine request',
               },
-              { intent: 'Pain', sentence: 'My head hurts.', speaker_perspective_question: 'Does your head hurt?', confidence: 0.1, evidenceIds: [], reasoning: 'Pain' },
-              { intent: 'Rest head', sentence: 'I need to rest my eyes.', speaker_perspective_question: 'Do you want to rest your eyes?', confidence: 0.05, evidenceIds: [], reasoning: 'Rest' },
+              {
+                intent: 'Pain',
+                sentence: 'My head hurts.',
+                speaker_perspective_question: 'Does your head hurt?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Pain',
+              },
+              {
+                intent: 'Rest head',
+                sentence: 'I need to rest my eyes.',
+                speaker_perspective_question: 'Do you want to rest your eyes?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Rest',
+              },
             ],
           });
         }
@@ -782,8 +869,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Lunch hungry request',
               },
-              { intent: 'Food now', sentence: 'Please bring food.', speaker_perspective_question: 'Do you want food now?', confidence: 0.1, evidenceIds: [], reasoning: 'Food' },
-              { intent: 'Snack', sentence: 'Can I have a small snack?', speaker_perspective_question: 'Do you want a snack?', confidence: 0.05, evidenceIds: [], reasoning: 'Snack' },
+              {
+                intent: 'Food now',
+                sentence: 'Please bring food.',
+                speaker_perspective_question: 'Do you want food now?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Food',
+              },
+              {
+                intent: 'Snack',
+                sentence: 'Can I have a small snack?',
+                speaker_perspective_question: 'Do you want a snack?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Snack',
+              },
             ],
           });
         }
@@ -799,8 +900,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Light / curtains request',
               },
-              { intent: 'Curtains', sentence: 'Please close the curtains.', speaker_perspective_question: 'Should I close the curtains?', confidence: 0.1, evidenceIds: [], reasoning: 'Curtains' },
-              { intent: 'Warm', sentence: 'It is warm in here.', speaker_perspective_question: 'Are you feeling hot?', confidence: 0.05, evidenceIds: [], reasoning: 'Warm' },
+              {
+                intent: 'Curtains',
+                sentence: 'Please close the curtains.',
+                speaker_perspective_question: 'Should I close the curtains?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Curtains',
+              },
+              {
+                intent: 'Warm',
+                sentence: 'It is warm in here.',
+                speaker_perspective_question: 'Are you feeling hot?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Warm',
+              },
             ],
           });
         }
@@ -816,8 +931,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Gratitude to caregiver',
               },
-              { intent: 'Appreciation', sentence: 'Thank you very much.', speaker_perspective_question: 'Are you saying thank you?', confidence: 0.08, evidenceIds: [], reasoning: 'Thanks' },
-              { intent: 'Call Sunita', sentence: 'Can you call Sunita here?', speaker_perspective_question: 'Do you want Sunita to come here?', confidence: 0.04, evidenceIds: [], reasoning: 'Call' },
+              {
+                intent: 'Appreciation',
+                sentence: 'Thank you very much.',
+                speaker_perspective_question: 'Are you saying thank you?',
+                confidence: 0.08,
+                evidenceIds: [],
+                reasoning: 'Thanks',
+              },
+              {
+                intent: 'Call Sunita',
+                sentence: 'Can you call Sunita here?',
+                speaker_perspective_question: 'Do you want Sunita to come here?',
+                confidence: 0.04,
+                evidenceIds: [],
+                reasoning: 'Call',
+              },
             ],
           });
         }
@@ -833,8 +962,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Sit outside chair request',
               },
-              { intent: 'Sit down', sentence: 'I want to sit down.', speaker_perspective_question: 'Do you want to sit down?', confidence: 0.1, evidenceIds: [], reasoning: 'Sit' },
-              { intent: 'Balcony', sentence: 'Let us go to the balcony.', speaker_perspective_question: 'Do you want to go to the balcony?', confidence: 0.05, evidenceIds: [], reasoning: 'Balcony' },
+              {
+                intent: 'Sit down',
+                sentence: 'I want to sit down.',
+                speaker_perspective_question: 'Do you want to sit down?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Sit',
+              },
+              {
+                intent: 'Balcony',
+                sentence: 'Let us go to the balcony.',
+                speaker_perspective_question: 'Do you want to go to the balcony?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Balcony',
+              },
             ],
           });
         }
@@ -850,8 +993,22 @@ export class MockLyzrClient implements LyzrClient {
                 evidenceIds: [],
                 reasoning: 'Music request',
               },
-              { intent: 'Radio', sentence: 'Turn on the radio.', speaker_perspective_question: 'Should I turn on the radio?', confidence: 0.1, evidenceIds: [], reasoning: 'Radio' },
-              { intent: 'Sound', sentence: 'Can we have some soft music?', speaker_perspective_question: 'Do you want to hear music?', confidence: 0.05, evidenceIds: [], reasoning: 'Music' },
+              {
+                intent: 'Radio',
+                sentence: 'Turn on the radio.',
+                speaker_perspective_question: 'Should I turn on the radio?',
+                confidence: 0.1,
+                evidenceIds: [],
+                reasoning: 'Radio',
+              },
+              {
+                intent: 'Sound',
+                sentence: 'Can we have some soft music?',
+                speaker_perspective_question: 'Do you want to hear music?',
+                confidence: 0.05,
+                evidenceIds: [],
+                reasoning: 'Music',
+              },
             ],
           });
         }
@@ -934,7 +1091,11 @@ export class MockLyzrClient implements LyzrClient {
         const goldWords = gold
           .replace(/[.,?!]/g, '')
           .split(/\s+/)
-          .filter((w: string) => w.length > 3 && !['please', 'tell', 'that', 'with', 'about', 'some', 'from', 'this', 'what'].includes(w));
+          .filter(
+            (w: string) =>
+              w.length > 3 &&
+              !['please', 'tell', 'that', 'with', 'about', 'some', 'from', 'this', 'what'].includes(w),
+          );
 
         const matches = goldWords.filter((w: string) => combined.includes(w));
         const ratio = goldWords.length > 0 ? matches.length / goldWords.length : 0;

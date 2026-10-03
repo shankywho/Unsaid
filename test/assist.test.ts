@@ -54,9 +54,7 @@ describe('Phase 5 — ASSIST pipeline, confirmation state machine, and audio', (
     expect(conf?.question.toLowerCase()).toContain('priya');
 
     // Test audio route GET /v1/audio/:id
-    const audioRes = await request(app)
-      .get(`/v1/audio/${conf!.questionAudio}`)
-      .expect(200);
+    const audioRes = await request(app).get(`/v1/audio/${conf!.questionAudio}`).expect(200);
     expect(audioRes.headers['content-type']).toContain('audio/mpeg');
     expect(audioRes.body.length).toBeGreaterThan(500);
 

@@ -78,7 +78,9 @@ export async function createPendingConfirmation(params: {
   );
 
   // Notify Omi wearable if configured
-  await adapters().omi.notify(userId, question).catch(() => {});
+  await adapters()
+    .omi.notify(userId, question)
+    .catch(() => {});
 
   return confirmation;
 }
@@ -182,7 +184,9 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
     try {
       const ttsRes = await adapters().tts.synthesize(nextQuestion);
       nextAudio = ttsRes.id;
-    } catch {}
+    } catch {
+      // Best-effort TTS audio synthesis
+    }
 
     const updated = await prisma.confirmation.update({
       where: { id: confirmationId },

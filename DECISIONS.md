@@ -80,8 +80,14 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Core metric proof: Context ON achieves **0.91 top-1 / 0.94 top-3** vs Context OFF at **0.66 top-1 / 0.66 top-3**, proving personal context vector retrieval is essential for disambiguating aphasic speech.
 - `scripts/replay-omi.ts` provides realistic Omi webhook replay with timing delays for demo video recording.
 
+## Phase 9 — Documentation and Diagrams
 
+- Architectural clarity: complete Mermaid DAG diagrams documented in `README.md` for both INGEST (asynchronous vector embedding & fact extraction) and ASSIST (parallel memory & wordmap retrieval, intent hypothesizing, confirmation generation, and low-latency audio synthesis).
+- Comprehensive README covering full installation, Docker Compose dependencies, API endpoints, evaluation benchmarks, and Lyzr setup instructions.
+- Zero-medical-claims framing maintained throughout docs: Unsaid is strictly framed as an accessibility & adaptive communication assistant.
 
+## Phase 10 — Stretch Goals & Enterprise Polish
 
-
-
+- Caregiver insights endpoint: `GET /v1/users/:id/insights` calculates communication metrics over time (e.g., confirmations, top recurring word map substitutions, active personal facts) to help speech therapists and family members track communication progress.
+- Raw ambient retention cleanup: `cleanupQueue.ts` schedules a recurring daily worker via BullMQ's modern `upsertJobScheduler` to purge raw ambient transcripts older than 30 days while preserving extracted semantic memories, satisfying strict privacy policies.
+- Graceful shutdown lifecycle: worker process handles SIGINT and SIGTERM to stop background queues and close Prisma and Redis connections cleanly without dropping active jobs.

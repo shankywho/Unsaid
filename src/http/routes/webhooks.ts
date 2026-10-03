@@ -37,7 +37,10 @@ webhooksRouter.post('/webhooks/omi/transcript', async (req, res) => {
   });
 
   if (!parsed) {
-    logger.warn({ bodySnippet: JSON.stringify(req.body).slice(0, 150) }, 'Unparseable Omi transcript payload');
+    logger.warn(
+      { bodySnippet: JSON.stringify(req.body).slice(0, 150) },
+      'Unparseable Omi transcript payload',
+    );
     // Never 500 on unexpected payloads
     return res.status(200).json({ ok: true, ignored: true, reason: 'unparseable_payload' });
   }
@@ -49,7 +52,9 @@ webhooksRouter.post('/webhooks/omi/transcript', async (req, res) => {
     });
   }
   if (!user) {
-    user = (await prisma.user.findFirst()) || (await prisma.user.create({ data: { displayName: 'Default Patient' } }));
+    user =
+      (await prisma.user.findFirst()) ||
+      (await prisma.user.create({ data: { displayName: 'Default Patient' } }));
   }
 
   const querySessionId = typeof req.query.session_id === 'string' ? req.query.session_id : undefined;
@@ -131,7 +136,9 @@ webhooksRouter.post('/webhooks/omi/memory', async (req, res) => {
     });
   }
   if (!user) {
-    user = (await prisma.user.findFirst()) || (await prisma.user.create({ data: { displayName: 'Default Patient' } }));
+    user =
+      (await prisma.user.findFirst()) ||
+      (await prisma.user.create({ data: { displayName: 'Default Patient' } }));
   }
 
   const sessionId = parsed.id || newId();

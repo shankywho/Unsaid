@@ -42,12 +42,20 @@
   },
   "routines": [
     { "name": "Morning Chai", "time": "07:30 AM", "details": "Ginger tea with no added sugar" },
-    { "name": "Evening Walk", "time": "06:00 PM", "details": "20-minute walk to the community park with Sunita" },
+    {
+      "name": "Evening Walk",
+      "time": "06:00 PM",
+      "details": "20-minute walk to the community park with Sunita"
+    },
     { "name": "Temple Visit", "time": "Tuesday morning", "details": "Hanuman temple visit with Ramesh" },
     { "name": "Cricket on TV", "time": "Weekend afternoons", "details": "Watches IPL matches with Aarav" }
   ],
   "objects": [
-    { "name": "Reading glasses", "aliases": ["chashma", "specs"], "status": "frame cracked, sent to optical shop for repair" },
+    {
+      "name": "Reading glasses",
+      "aliases": ["chashma", "specs"],
+      "status": "frame cracked, sent to optical shop for repair"
+    },
     { "name": "Blue shawl", "details": "Gift from daughter Priya, keeps in easy chair" },
     { "name": "Vintage radio", "details": "Plays old Hindi music in the afternoon" }
   ]

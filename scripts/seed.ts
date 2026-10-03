@@ -4,7 +4,6 @@ import { prisma } from '../src/db';
 import { bootstrapQdrant } from '../src/adapters/qdrant/collections';
 import { runIngestPipeline } from '../src/orchestrator/ingestPipeline';
 import { upsertSubstitution } from '../src/memory/wordMap';
-import { env } from '../src/config/env';
 
 export async function seed(): Promise<string> {
   console.log('Seeding Unsaid demo persona & ambient memory...');
@@ -56,7 +55,9 @@ export async function seed(): Promise<string> {
     totalFacts += result.facts.length;
   }
 
-  console.log(`Ingested ${ambientSegments.length} ambient segments -> ${totalFacts} memory facts stored in Qdrant.`);
+  console.log(
+    `Ingested ${ambientSegments.length} ambient segments -> ${totalFacts} memory facts stored in Qdrant.`,
+  );
 
   // Seed baseline word-map substitutions
   await upsertSubstitution(user.id, 'car', 'walk', 'SUBSTITUTION');

@@ -32,7 +32,7 @@ export async function runAgent<T>(
   const sessionId = ctx.sessionId ?? 'session_default';
   const initialMessage = typeof input === 'string' ? input : JSON.stringify(input);
 
-  let raw = await client.chat({
+  const raw = await client.chat({
     agent,
     userId: ctx.userId,
     sessionId,

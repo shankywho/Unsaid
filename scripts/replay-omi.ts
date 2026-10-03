@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '../src/config/env';
-import { fetchRetry } from '../src/lib/http';
 
 const BASE_URL = process.env.PUBLIC_BASE_URL || `http://localhost:${env.PORT || 8080}`;
 const DELAY_MS = Number(process.env.REPLAY_DELAY_MS) || 150;

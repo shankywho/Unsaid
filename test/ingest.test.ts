@@ -32,9 +32,7 @@ describe('Phase 4 — Ingest, Memory Store, and Omi Webhooks', () => {
 
       expect(filter).toBeDefined();
       expect(filter.must).toBeDefined();
-      const userClause = filter.must.find(
-        (c: any) => c.key === 'userId' && c.match?.value === user.id,
-      );
+      const userClause = filter.must.find((c: any) => c.key === 'userId' && c.match?.value === user.id);
       expect(userClause).toBeDefined();
       querySpy.mockRestore();
     });
@@ -106,8 +104,20 @@ describe('Phase 4 — Ingest, Memory Store, and Omi Webhooks', () => {
       const payload = {
         session_id: 'sess_week_1',
         segments: [
-          { speaker: 'Ramesh', text: 'Priya is visiting us this Sunday.', is_user: false, start: 1.0, end: 3.5 },
-          { speaker: 'Sunita', text: 'Dr. Mehta said Papa must avoid sugar and sweets.', is_user: false, start: 4.0, end: 7.0 },
+          {
+            speaker: 'Ramesh',
+            text: 'Priya is visiting us this Sunday.',
+            is_user: false,
+            start: 1.0,
+            end: 3.5,
+          },
+          {
+            speaker: 'Sunita',
+            text: 'Dr. Mehta said Papa must avoid sugar and sweets.',
+            is_user: false,
+            start: 4.0,
+            end: 7.0,
+          },
         ],
       };
 
@@ -133,7 +143,9 @@ describe('Phase 4 — Ingest, Memory Store, and Omi Webhooks', () => {
       // Check that facts exist in Qdrant and can be retrieved
       const hits = await searchMemory(user.id, ['Priya Sunday', 'sugar restriction']);
       expect(hits.length).toBeGreaterThan(0);
-      expect(hits.some((h) => h.text.toLowerCase().includes('priya') || h.text.toLowerCase().includes('sugar'))).toBe(true);
+      expect(
+        hits.some((h) => h.text.toLowerCase().includes('priya') || h.text.toLowerCase().includes('sugar')),
+      ).toBe(true);
 
       // Verify Run and Step were recorded
       const runs = await prisma.run.findMany({ where: { userId: user.id, pipeline: 'INGEST' } });

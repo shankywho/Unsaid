@@ -11,7 +11,6 @@ import {
 } from '../src/agents/schemas';
 import { MockLyzrClient } from '../src/adapters/lyzr/mock';
 import type { LyzrChatRequest, LyzrClient } from '../src/adapters/lyzr/types';
-import type { AgentName } from '../src/agents/names';
 import { main as lyzrSetupMain } from '../scripts/lyzr-setup';
 
 describe('Phase 3 — Agents & runAgent', () => {

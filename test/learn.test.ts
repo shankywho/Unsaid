@@ -40,10 +40,7 @@ describe('Phase 6 — LEARN pipeline and WordMap feedback loop', () => {
     expect(entries.some((e) => e.saidToken === 'car' && e.meantToken === 'walk')).toBe(true);
 
     // Verify GET /v1/users/:id/wordmap endpoint
-    const getRes = await request(app)
-      .get(`/v1/users/${user.id}/wordmap`)
-      .set(authHeader)
-      .expect(200);
+    const getRes = await request(app).get(`/v1/users/${user.id}/wordmap`).set(authHeader).expect(200);
 
     expect(getRes.body.ok).toBe(true);
     expect(getRes.body.data.substitutions.length).toBeGreaterThan(0);

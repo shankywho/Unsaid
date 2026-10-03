@@ -1,13 +1,43 @@
 import { env } from './config/env';
 import { createApp } from './http/app';
+import { bootstrapQdrant } from './adapters/qdrant/collections';
+import { startWorkers } from './queues';
 import { logger } from './lib/logger';
+import { prisma } from './db';
+import { redis } from './redis';
 
 async function main(): Promise<void> {
+  logger.info({ nodeEnv: env.NODE_ENV, mock: env.MOCK_EXTERNALS }, 'Booting Unsaid backend...');
+
+  // 1. Verify / bootstrap vector collections
+  await bootstrapQdrant();
+
+  // 2. Start BullMQ background workers
+  const workers = startWorkers();
+
+  // 3. Start HTTP server
   const app = createApp();
-  app.listen(env.PORT, () => logger.info({ port: env.PORT, mock: env.MOCK_EXTERNALS }, 'unsaid listening'));
+  const server = app.listen(env.PORT, () => {
+    logger.info(
+      { port: env.PORT, publicBase: env.PUBLIC_BASE_URL, mock: env.MOCK_EXTERNALS },
+      '🚀 Unsaid backend listening',
+    );
+  });
+
+  const shutdown = async (signal: string) => {
+    logger.info({ signal }, 'Shutting down gracefully...');
+    server.close();
+    await workers.stop();
+    await prisma.$disconnect();
+    redis.disconnect();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
 main().catch((err) => {
-  logger.error({ err }, 'boot failed');
+  logger.error({ err }, 'Boot failed');
   process.exit(1);
 });

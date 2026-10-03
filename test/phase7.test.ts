@@ -31,20 +31,14 @@ describe('Phase 7 — Runs, Memory/Privacy, Simulation, and Debug Console', () =
       .expect(200);
 
     // List runs
-    const listRes = await request(app)
-      .get(`/v1/runs?userId=${user.id}`)
-      .set(authHeader)
-      .expect(200);
+    const listRes = await request(app).get(`/v1/runs?userId=${user.id}`).set(authHeader).expect(200);
 
     expect(listRes.body.ok).toBe(true);
     expect(listRes.body.data.length).toBeGreaterThan(0);
     const runId = listRes.body.data[0].id;
 
     // Get single run trace
-    const getRes = await request(app)
-      .get(`/v1/runs/${runId}`)
-      .set(authHeader)
-      .expect(200);
+    const getRes = await request(app).get(`/v1/runs/${runId}`).set(authHeader).expect(200);
 
     expect(getRes.body.ok).toBe(true);
     expect(getRes.body.data.id).toBe(runId);
@@ -62,7 +56,7 @@ describe('Phase 7 — Runs, Memory/Privacy, Simulation, and Debug Console', () =
       entities: ['Priya', 'Sunday'],
       confidence: 0.95,
     });
-    const fact2 = await upsertMemoryFact(user.id, {
+    await upsertMemoryFact(user.id, {
       type: 'routine',
       text: 'Evening walk at 6 PM',
       entities: ['walk', '6 PM'],
@@ -70,10 +64,7 @@ describe('Phase 7 — Runs, Memory/Privacy, Simulation, and Debug Console', () =
     });
 
     // List memory facts
-    const listRes = await request(app)
-      .get(`/v1/memory?userId=${user.id}`)
-      .set(authHeader)
-      .expect(200);
+    const listRes = await request(app).get(`/v1/memory?userId=${user.id}`).set(authHeader).expect(200);
 
     expect(listRes.body.ok).toBe(true);
     expect(listRes.body.data.length).toBe(2);
@@ -89,29 +80,16 @@ describe('Phase 7 — Runs, Memory/Privacy, Simulation, and Debug Console', () =
     expect(searchRes.body.data[0].text).toContain('Priya');
 
     // Delete single memory fact
-    await request(app)
-      .delete(`/v1/memory/${fact1.id}?userId=${user.id}`)
-      .set(authHeader)
-      .expect(200);
+    await request(app).delete(`/v1/memory/${fact1.id}?userId=${user.id}`).set(authHeader).expect(200);
 
-    const afterDeleteRes = await request(app)
-      .get(`/v1/memory?userId=${user.id}`)
-      .set(authHeader)
-      .expect(200);
+    const afterDeleteRes = await request(app).get(`/v1/memory?userId=${user.id}`).set(authHeader).expect(200);
 
     expect(afterDeleteRes.body.data.length).toBe(1);
 
     // Purge all memory for user
-    await request(app)
-      .post('/v1/memory/purge')
-      .set(authHeader)
-      .send({ userId: user.id })
-      .expect(200);
+    await request(app).post('/v1/memory/purge').set(authHeader).send({ userId: user.id }).expect(200);
 
-    const afterPurgeRes = await request(app)
-      .get(`/v1/memory?userId=${user.id}`)
-      .set(authHeader)
-      .expect(200);
+    const afterPurgeRes = await request(app).get(`/v1/memory?userId=${user.id}`).set(authHeader).expect(200);
 
     expect(afterPurgeRes.body.data.length).toBe(0);
   });
@@ -124,9 +102,7 @@ describe('Phase 7 — Runs, Memory/Privacy, Simulation, and Debug Console', () =
       .set(authHeader)
       .send({
         userId: user.id,
-        segments: [
-          { speaker: 'Sunita', text: 'Dr. Mehta visited today.', isUser: false },
-        ],
+        segments: [{ speaker: 'Sunita', text: 'Dr. Mehta visited today.', isUser: false }],
       })
       .expect(200);
 

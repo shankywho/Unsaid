@@ -97,13 +97,70 @@ usersRouter.get('/users/:id/wordmap', async (req, res, next) => {
         id: p.id,
         ...(p.payload || {}),
       }));
-    } catch {}
+    } catch {
+      // Ignore if qdrant collection is empty or not yet seeded
+    }
 
     return res.status(200).json({
       ok: true,
       data: {
         substitutions: entries,
         resolvedUtterances,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+usersRouter.get('/users/:id/insights', async (req, res, next) => {
+  try {
+    const { id: userId } = req.params;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    }
+
+    const [fragmentsCount, totalConfirmations, confirmedCount, firstTryCount, topSubstitutions] =
+      await Promise.all([
+        prisma.transcriptSegment.count({
+          where: { userId, isUser: true },
+        }),
+        prisma.confirmation.count({
+          where: { userId },
+        }),
+        prisma.confirmation.count({
+          where: { userId, status: 'CONFIRMED' },
+        }),
+        prisma.confirmation.count({
+          where: { userId, status: 'CONFIRMED', confirmedIdx: 0 },
+        }),
+        prisma.wordMapEntry.findMany({
+          where: { userId },
+          orderBy: { hits: 'desc' },
+          take: 5,
+        }),
+      ]);
+
+    const firstTryResolutionRate =
+      confirmedCount > 0 ? Number((firstTryCount / confirmedCount).toFixed(2)) : 0;
+    const overallResolutionRate =
+      totalConfirmations > 0 ? Number((confirmedCount / totalConfirmations).toFixed(2)) : 0;
+
+    return res.status(200).json({
+      ok: true,
+      data: {
+        userId,
+        displayName: user.displayName,
+        stats: {
+          fragmentsCount,
+          totalConfirmations,
+          confirmedCount,
+          firstTryCount,
+          firstTryResolutionRate,
+          overallResolutionRate,
+        },
+        topSubstitutions,
       },
     });
   } catch (err) {

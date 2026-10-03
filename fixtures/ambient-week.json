@@ -1,57 +1,400 @@
 [
-  { "dayOffset": -6, "speaker": "Sunita", "text": "Good morning Papa ji, here is your morning ginger tea with no sugar.", "is_user": false, "start": 0, "end": 4 },
-  { "dayOffset": -6, "speaker": "Ramesh", "text": "Sunita ji, did Dr. Mehta visit yesterday? What did he say about his diet?", "is_user": false, "start": 5, "end": 10 },
-  { "dayOffset": -6, "speaker": "Sunita", "text": "Dr. Mehta said Papa must strictly avoid sugar, sweets, and pastries.", "is_user": false, "start": 11, "end": 16 },
-  { "dayOffset": -6, "speaker": "Ramesh", "text": "Okay, please ensure no sugar in his tea or meals.", "is_user": false, "start": 17, "end": 20 },
-  { "dayOffset": -6, "speaker": "Ramesh", "text": "Also, the weather looks cloudy today outside.", "is_user": false, "start": 21, "end": 24 },
-  { "dayOffset": -6, "speaker": "Aarav", "text": "Dadu, my cricket bat grip came loose.", "is_user": false, "start": 25, "end": 28 },
-  { "dayOffset": -6, "speaker": "Ramesh", "text": "I will fix the grip tonight, Aarav.", "is_user": false, "start": 29, "end": 32 },
-  { "dayOffset": -6, "speaker": "Sunita", "text": "Papa ji, it is 6 PM. Let us go for our evening walk in the park.", "is_user": false, "start": 33, "end": 37 },
-  
-  { "dayOffset": -5, "speaker": "Ramesh", "text": "The municipal water bill has arrived in the mail today.", "is_user": false, "start": 40, "end": 44 },
-  { "dayOffset": -5, "speaker": "Sunita", "text": "Yes bhaiya, the water bill is due this week before Friday.", "is_user": false, "start": 45, "end": 49 },
-  { "dayOffset": -5, "speaker": "Ramesh", "text": "I will pay the water bill online from my office account.", "is_user": false, "start": 50, "end": 54 },
-  { "dayOffset": -5, "speaker": "Sunita", "text": "Oh Papa ji dropped his reading glasses and the frame is cracked.", "is_user": false, "start": 55, "end": 60 },
-  { "dayOffset": -5, "speaker": "Ramesh", "text": "Let me take Papa's reading glasses to the optical shop for repair.", "is_user": false, "start": 61, "end": 66 },
-  { "dayOffset": -5, "speaker": "Sunita", "text": "The optician said the specs will take four days to repair.", "is_user": false, "start": 67, "end": 71 },
-  { "dayOffset": -5, "speaker": "Neighbor", "text": "Hello Ramesh, did you see the traffic on the main road?", "is_user": false, "start": 72, "end": 75 },
-  { "dayOffset": -5, "speaker": "Ramesh", "text": "Yes, construction is still going on.", "is_user": false, "start": 76, "end": 79 },
+  {
+    "dayOffset": -6,
+    "speaker": "Sunita",
+    "text": "Good morning Papa ji, here is your morning ginger tea with no sugar.",
+    "is_user": false,
+    "start": 0,
+    "end": 4
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Ramesh",
+    "text": "Sunita ji, did Dr. Mehta visit yesterday? What did he say about his diet?",
+    "is_user": false,
+    "start": 5,
+    "end": 10
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Sunita",
+    "text": "Dr. Mehta said Papa must strictly avoid sugar, sweets, and pastries.",
+    "is_user": false,
+    "start": 11,
+    "end": 16
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Ramesh",
+    "text": "Okay, please ensure no sugar in his tea or meals.",
+    "is_user": false,
+    "start": 17,
+    "end": 20
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Ramesh",
+    "text": "Also, the weather looks cloudy today outside.",
+    "is_user": false,
+    "start": 21,
+    "end": 24
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Aarav",
+    "text": "Dadu, my cricket bat grip came loose.",
+    "is_user": false,
+    "start": 25,
+    "end": 28
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Ramesh",
+    "text": "I will fix the grip tonight, Aarav.",
+    "is_user": false,
+    "start": 29,
+    "end": 32
+  },
+  {
+    "dayOffset": -6,
+    "speaker": "Sunita",
+    "text": "Papa ji, it is 6 PM. Let us go for our evening walk in the park.",
+    "is_user": false,
+    "start": 33,
+    "end": 37
+  },
 
-  { "dayOffset": -4, "speaker": "Priya", "text": "Hello Bhaiya! Calling from Pune. How is Papa doing today?", "is_user": false, "start": 80, "end": 85 },
-  { "dayOffset": -4, "speaker": "Ramesh", "text": "He is good Priya. When are you coming down to visit?", "is_user": false, "start": 86, "end": 90 },
-  { "dayOffset": -4, "speaker": "Priya", "text": "I booked my bus ticket. Priya is visiting Papa on Sunday morning.", "is_user": false, "start": 91, "end": 96 },
-  { "dayOffset": -4, "speaker": "Ramesh", "text": "Great! Mohan Papa will be thrilled to see you on Sunday.", "is_user": false, "start": 97, "end": 101 },
-  { "dayOffset": -4, "speaker": "Priya", "text": "Should I bring anything special? Maybe a bakery cake?", "is_user": false, "start": 102, "end": 106 },
-  { "dayOffset": -4, "speaker": "Ramesh", "text": "No! Dr. Mehta strictly forbade sugar and sweets for Papa.", "is_user": false, "start": 107, "end": 112 },
-  { "dayOffset": -4, "speaker": "Priya", "text": "Understood, no cake or sweets for Sunday then. I will bring sugar-free fruits.", "is_user": false, "start": 113, "end": 118 },
-  { "dayOffset": -4, "speaker": "Sunita", "text": "Papa ji, your blue shawl is freshly washed and folded on your chair.", "is_user": false, "start": 119, "end": 124 },
+  {
+    "dayOffset": -5,
+    "speaker": "Ramesh",
+    "text": "The municipal water bill has arrived in the mail today.",
+    "is_user": false,
+    "start": 40,
+    "end": 44
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Sunita",
+    "text": "Yes bhaiya, the water bill is due this week before Friday.",
+    "is_user": false,
+    "start": 45,
+    "end": 49
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Ramesh",
+    "text": "I will pay the water bill online from my office account.",
+    "is_user": false,
+    "start": 50,
+    "end": 54
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Sunita",
+    "text": "Oh Papa ji dropped his reading glasses and the frame is cracked.",
+    "is_user": false,
+    "start": 55,
+    "end": 60
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Ramesh",
+    "text": "Let me take Papa's reading glasses to the optical shop for repair.",
+    "is_user": false,
+    "start": 61,
+    "end": 66
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Sunita",
+    "text": "The optician said the specs will take four days to repair.",
+    "is_user": false,
+    "start": 67,
+    "end": 71
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Neighbor",
+    "text": "Hello Ramesh, did you see the traffic on the main road?",
+    "is_user": false,
+    "start": 72,
+    "end": 75
+  },
+  {
+    "dayOffset": -5,
+    "speaker": "Ramesh",
+    "text": "Yes, construction is still going on.",
+    "is_user": false,
+    "start": 76,
+    "end": 79
+  },
 
-  { "dayOffset": -3, "speaker": "Sunita", "text": "The physiotherapist called. The physio session is moved to Thursday at 11 AM.", "is_user": false, "start": 130, "end": 136 },
-  { "dayOffset": -3, "speaker": "Ramesh", "text": "Good to know, Thursday 11 AM physio is noted.", "is_user": false, "start": 137, "end": 141 },
-  { "dayOffset": -3, "speaker": "Aarav", "text": "Dadu, my school cricket tournament match is this Saturday morning!", "is_user": false, "start": 142, "end": 147 },
-  { "dayOffset": -3, "speaker": "Sunita", "text": "Aarav has been practicing cricket all week.", "is_user": false, "start": 148, "end": 151 },
-  { "dayOffset": -3, "speaker": "Ramesh", "text": "We will all cheer for Aarav on Saturday.", "is_user": false, "start": 152, "end": 155 },
-  { "dayOffset": -3, "speaker": "Sunita", "text": "Papa ji enjoys listening to the vintage radio after lunch.", "is_user": false, "start": 156, "end": 160 },
-  { "dayOffset": -3, "speaker": "Ramesh", "text": "I checked the radio batteries, they have full charge.", "is_user": false, "start": 161, "end": 165 },
+  {
+    "dayOffset": -4,
+    "speaker": "Priya",
+    "text": "Hello Bhaiya! Calling from Pune. How is Papa doing today?",
+    "is_user": false,
+    "start": 80,
+    "end": 85
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Ramesh",
+    "text": "He is good Priya. When are you coming down to visit?",
+    "is_user": false,
+    "start": 86,
+    "end": 90
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Priya",
+    "text": "I booked my bus ticket. Priya is visiting Papa on Sunday morning.",
+    "is_user": false,
+    "start": 91,
+    "end": 96
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Ramesh",
+    "text": "Great! Mohan Papa will be thrilled to see you on Sunday.",
+    "is_user": false,
+    "start": 97,
+    "end": 101
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Priya",
+    "text": "Should I bring anything special? Maybe a bakery cake?",
+    "is_user": false,
+    "start": 102,
+    "end": 106
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Ramesh",
+    "text": "No! Dr. Mehta strictly forbade sugar and sweets for Papa.",
+    "is_user": false,
+    "start": 107,
+    "end": 112
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Priya",
+    "text": "Understood, no cake or sweets for Sunday then. I will bring sugar-free fruits.",
+    "is_user": false,
+    "start": 113,
+    "end": 118
+  },
+  {
+    "dayOffset": -4,
+    "speaker": "Sunita",
+    "text": "Papa ji, your blue shawl is freshly washed and folded on your chair.",
+    "is_user": false,
+    "start": 119,
+    "end": 124
+  },
 
-  { "dayOffset": -2, "speaker": "Sunita", "text": "Bhaiya, remember Tuesday morning is temple visit with Mohan Papa.", "is_user": false, "start": 170, "end": 175 },
-  { "dayOffset": -2, "speaker": "Ramesh", "text": "Yes, we visit Hanuman temple every Tuesday morning without fail.", "is_user": false, "start": 176, "end": 181 },
-  { "dayOffset": -2, "speaker": "Ramesh", "text": "I also checked with the optician, reading glasses repair will be done by Friday.", "is_user": false, "start": 182, "end": 188 },
-  { "dayOffset": -2, "speaker": "Sunita", "text": "Papa has been having trouble reading the newspaper without his glasses.", "is_user": false, "start": 189, "end": 194 },
-  { "dayOffset": -2, "speaker": "Delivery", "text": "Grocery package delivery for Sharma residence.", "is_user": false, "start": 195, "end": 198 },
-  { "dayOffset": -2, "speaker": "Sunita", "text": "Thank you, I will take the pulses and oats.", "is_user": false, "start": 199, "end": 202 },
+  {
+    "dayOffset": -3,
+    "speaker": "Sunita",
+    "text": "The physiotherapist called. The physio session is moved to Thursday at 11 AM.",
+    "is_user": false,
+    "start": 130,
+    "end": 136
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Ramesh",
+    "text": "Good to know, Thursday 11 AM physio is noted.",
+    "is_user": false,
+    "start": 137,
+    "end": 141
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Aarav",
+    "text": "Dadu, my school cricket tournament match is this Saturday morning!",
+    "is_user": false,
+    "start": 142,
+    "end": 147
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Sunita",
+    "text": "Aarav has been practicing cricket all week.",
+    "is_user": false,
+    "start": 148,
+    "end": 151
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Ramesh",
+    "text": "We will all cheer for Aarav on Saturday.",
+    "is_user": false,
+    "start": 152,
+    "end": 155
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Sunita",
+    "text": "Papa ji enjoys listening to the vintage radio after lunch.",
+    "is_user": false,
+    "start": 156,
+    "end": 160
+  },
+  {
+    "dayOffset": -3,
+    "speaker": "Ramesh",
+    "text": "I checked the radio batteries, they have full charge.",
+    "is_user": false,
+    "start": 161,
+    "end": 165
+  },
 
-  { "dayOffset": -1, "speaker": "Sunita", "text": "Today is Thursday, physiotherapist will be here at 11 AM.", "is_user": false, "start": 210, "end": 215 },
-  { "dayOffset": -1, "speaker": "Physiotherapist", "text": "Mohan ji, your arm mobility is improving nicely after the stroke.", "is_user": false, "start": 216, "end": 221 },
-  { "dayOffset": -1, "speaker": "Physiotherapist", "text": "Keep doing the gentle shoulder rotations twice a day.", "is_user": false, "start": 222, "end": 226 },
-  { "dayOffset": -1, "speaker": "Ramesh", "text": "Sunita, did you confirm Priya is arriving on Sunday morning?", "is_user": false, "start": 227, "end": 231 },
-  { "dayOffset": -1, "speaker": "Sunita", "text": "Yes, beti Priya will reach by 10 AM on Sunday.", "is_user": false, "start": 232, "end": 236 },
-  { "dayOffset": -1, "speaker": "Sunita", "text": "And remember Papa: at 6 PM we take our walk to the park.", "is_user": false, "start": 237, "end": 241 },
+  {
+    "dayOffset": -2,
+    "speaker": "Sunita",
+    "text": "Bhaiya, remember Tuesday morning is temple visit with Mohan Papa.",
+    "is_user": false,
+    "start": 170,
+    "end": 175
+  },
+  {
+    "dayOffset": -2,
+    "speaker": "Ramesh",
+    "text": "Yes, we visit Hanuman temple every Tuesday morning without fail.",
+    "is_user": false,
+    "start": 176,
+    "end": 181
+  },
+  {
+    "dayOffset": -2,
+    "speaker": "Ramesh",
+    "text": "I also checked with the optician, reading glasses repair will be done by Friday.",
+    "is_user": false,
+    "start": 182,
+    "end": 188
+  },
+  {
+    "dayOffset": -2,
+    "speaker": "Sunita",
+    "text": "Papa has been having trouble reading the newspaper without his glasses.",
+    "is_user": false,
+    "start": 189,
+    "end": 194
+  },
+  {
+    "dayOffset": -2,
+    "speaker": "Delivery",
+    "text": "Grocery package delivery for Sharma residence.",
+    "is_user": false,
+    "start": 195,
+    "end": 198
+  },
+  {
+    "dayOffset": -2,
+    "speaker": "Sunita",
+    "text": "Thank you, I will take the pulses and oats.",
+    "is_user": false,
+    "start": 199,
+    "end": 202
+  },
 
-  { "dayOffset": 0, "speaker": "Ramesh", "text": "Good morning Papa! I paid the water bill online earlier today.", "is_user": false, "start": 250, "end": 255 },
-  { "dayOffset": 0, "speaker": "Sunita", "text": "The optician called, the reading glasses are finally ready for pickup.", "is_user": false, "start": 256, "end": 261 },
-  { "dayOffset": 0, "speaker": "Ramesh", "text": "I will pick up the reading glasses on my way back from work.", "is_user": false, "start": 262, "end": 266 },
-  { "dayOffset": 0, "speaker": "Aarav", "text": "Dadu, don't forget my cricket match tomorrow morning!", "is_user": false, "start": 267, "end": 271 },
-  { "dayOffset": 0, "speaker": "Sunita", "text": "Sunita will make sure Dadu wears his blue shawl if it feels chilly.", "is_user": false, "start": 272, "end": 277 },
-  { "dayOffset": 0, "speaker": "Ramesh", "text": "Priya called again, reminding us she is arriving Sunday morning.", "is_user": false, "start": 278, "end": 283 }
+  {
+    "dayOffset": -1,
+    "speaker": "Sunita",
+    "text": "Today is Thursday, physiotherapist will be here at 11 AM.",
+    "is_user": false,
+    "start": 210,
+    "end": 215
+  },
+  {
+    "dayOffset": -1,
+    "speaker": "Physiotherapist",
+    "text": "Mohan ji, your arm mobility is improving nicely after the stroke.",
+    "is_user": false,
+    "start": 216,
+    "end": 221
+  },
+  {
+    "dayOffset": -1,
+    "speaker": "Physiotherapist",
+    "text": "Keep doing the gentle shoulder rotations twice a day.",
+    "is_user": false,
+    "start": 222,
+    "end": 226
+  },
+  {
+    "dayOffset": -1,
+    "speaker": "Ramesh",
+    "text": "Sunita, did you confirm Priya is arriving on Sunday morning?",
+    "is_user": false,
+    "start": 227,
+    "end": 231
+  },
+  {
+    "dayOffset": -1,
+    "speaker": "Sunita",
+    "text": "Yes, beti Priya will reach by 10 AM on Sunday.",
+    "is_user": false,
+    "start": 232,
+    "end": 236
+  },
+  {
+    "dayOffset": -1,
+    "speaker": "Sunita",
+    "text": "And remember Papa: at 6 PM we take our walk to the park.",
+    "is_user": false,
+    "start": 237,
+    "end": 241
+  },
+
+  {
+    "dayOffset": 0,
+    "speaker": "Ramesh",
+    "text": "Good morning Papa! I paid the water bill online earlier today.",
+    "is_user": false,
+    "start": 250,
+    "end": 255
+  },
+  {
+    "dayOffset": 0,
+    "speaker": "Sunita",
+    "text": "The optician called, the reading glasses are finally ready for pickup.",
+    "is_user": false,
+    "start": 256,
+    "end": 261
+  },
+  {
+    "dayOffset": 0,
+    "speaker": "Ramesh",
+    "text": "I will pick up the reading glasses on my way back from work.",
+    "is_user": false,
+    "start": 262,
+    "end": 266
+  },
+  {
+    "dayOffset": 0,
+    "speaker": "Aarav",
+    "text": "Dadu, don't forget my cricket match tomorrow morning!",
+    "is_user": false,
+    "start": 267,
+    "end": 271
+  },
+  {
+    "dayOffset": 0,
+    "speaker": "Sunita",
+    "text": "Sunita will make sure Dadu wears his blue shawl if it feels chilly.",
+    "is_user": false,
+    "start": 272,
+    "end": 277
+  },
+  {
+    "dayOffset": 0,
+    "speaker": "Ramesh",
+    "text": "Priya called again, reminding us she is arriving Sunday morning.",
+    "is_user": false,
+    "start": 278,
+    "end": 283
+  }
 ]
