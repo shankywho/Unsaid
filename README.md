@@ -104,14 +104,14 @@ graph TD
 
 Unsaid includes an automated evaluation harness (`scripts/eval.ts`) to benchmark intent resolution accuracy with **context ON vs context OFF**.
 
-The test set consists of **32 synthetic clinical scenario test cases** (`fixtures/fragments-eval.json`), constructed from speech-language pathology literature on post-stroke expressive/Broca's aphasia. Exactly 22 fragments (~70%) require personal household context (doctor's instructions, family visit timings, repair status, bills), while 10 fragments represent self-contained universal needs (water, sleep, cold/fan).
+The test set consists of **32 synthetic test cases modeled on common non-fluent aphasia speech patterns** (`fixtures/fragments-eval.json`). Exactly 22 fragments (~70%) require personal household context (doctor's instructions, family visit timings, repair status, bills), while 10 fragments represent self-contained universal needs (water, sleep, cold/fan).
 
 > [!NOTE]
-> **Mock-Mode Smoke Test Baseline:** The results below reflect **mock-mode pipeline smoke testing (`MOCK_EXTERNALS=true`)** used during local development and CI to verify DAG orchestration, vector retrieval filtering, and state transitions without incurring live API costs. Latencies (~30ms) reflect local in-memory execution rather than real LLM API roundtrips (which typically take 1.5–3.5s). Real LLM benchmark scores with live Lyzr agent calls will replace these baselines upon configuring `LYZR_API_KEY` and `OPENAI_API_KEY`.
+> **Mock-Mode Baseline (pipeline smoke test, not a quality metric):** The results below reflect **mock-mode pipeline smoke testing (`MOCK_EXTERNALS=true`)** used during local development and CI to verify DAG orchestration, vector retrieval filtering, and state transitions without incurring live API costs. Latencies (~30ms) reflect local in-memory execution rather than real LLM API roundtrips (which typically take 1.5–3.5s). Real LLM benchmark scores with live Lyzr agent calls will replace these baselines upon configuring `LYZR_API_KEY` and `OPENAI_API_KEY`.
 
 ```
 ========================================================================
-  MOCK-MODE PIPELINE SMOKE TEST (CI / Offline Baseline)
+  MOCK-MODE PIPELINE SMOKE TEST (pipeline smoke test, not a quality metric)
   Dataset: fixtures/fragments-eval.json (32 synthetic clinical scenarios)
 ========================================================================
 
@@ -191,13 +191,13 @@ The entire Unsaid backend runs end-to-end without requiring external API keys. W
 To run the ablation evaluation suite against mocks:
 
 ```bash
-pnpm eval          # alias: pnpm eval:ablation
+pnpm eval
 ```
 
 To replay the demo session via real HTTP calls:
 
 ```bash
-pnpm replay        # alias: pnpm replay:omi
+pnpm replay:omi
 ```
 
 ---
@@ -206,28 +206,28 @@ pnpm replay        # alias: pnpm replay:omi
 
 All `/v1/*` routes require `Authorization: Bearer <API_KEY>` (or `?api_key=` for SSE/audio). Webhooks accept optional `?secret=`.
 
-| Method   | Path                                    | Description                                                               |
-| -------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| `GET`    | `/healthz`                              | Health check for PostgreSQL, Redis, Qdrant, and adapters                  |
-| `GET`    | `/debug`                                | Live interactive caregiver console & DAG trace visualizer                 |
-| `POST`   | `/webhooks/omi/transcript?uid=&secret=` | Omi real-time transcript webhook (buffers ambient or triggers assist)     |
-| `POST`   | `/webhooks/omi/memory?uid=&secret=`     | Omi full conversation memory webhook                                      |
-| `POST`   | `/v1/users`                             | Create patient profile (`{ displayName, caregiverName }`)                 |
-| `GET`    | `/v1/users/:id`                         | Fetch patient profile and settings                                        |
-| `PATCH`  | `/v1/users/:id`                         | Update patient settings (`{ contextEnabled, assistMode }`)                |
-| `GET`    | `/v1/users/:id/wordmap`                 | List learned personal substitutions and resolved utterances               |
-| `GET`    | `/v1/users/:id/insights`                | Weekly stats: fragment counts, first-try resolution rate trend            |
-| `POST`   | `/v1/simulate/fragment`                 | Simulate patient aphasic fragment directly (alias: `/v1/simulate/assist`) |
-| `POST`   | `/v1/simulate/segments`                 | Simulate ambient or patient speech segments                               |
-| `POST`   | `/v1/confirmations/:id/answer`          | Answer active confirmation (`{ answer: "yes" \| "no" }`)                  |
-| `GET`    | `/v1/confirmations/:id`                 | Fetch confirmation state                                                  |
-| `GET`    | `/v1/runs?userId=&pipeline=`            | List execution traces                                                     |
-| `GET`    | `/v1/runs/:id`                          | Detailed DAG run trace with steps, latencies, and Qdrant hits             |
-| `GET`    | `/v1/memory?userId=&q=`                 | List or semantically search personal memory facts                         |
-| `DELETE` | `/v1/memory/:pointId?userId=`           | Delete a specific memory fact (privacy control)                           |
-| `POST`   | `/v1/memory/purge`                      | Purge all memory facts and word map entries for a patient                 |
-| `GET`    | `/v1/stream?userId=`                    | Server-Sent Events (SSE) live pipeline observability feed                 |
-| `GET`    | `/v1/audio/:id`                         | Serve synthesized MP3 audio for questions and resolved speech             |
+| Method   | Path                                    | Description                                                           |
+| -------- | --------------------------------------- | --------------------------------------------------------------------- |
+| `GET`    | `/healthz`                              | Health check for PostgreSQL, Redis, Qdrant, and adapters              |
+| `GET`    | `/debug`                                | Live interactive caregiver console & DAG trace visualizer             |
+| `POST`   | `/webhooks/omi/transcript?uid=&secret=` | Omi real-time transcript webhook (buffers ambient or triggers assist) |
+| `POST`   | `/webhooks/omi/memory?uid=&secret=`     | Omi full conversation memory webhook                                  |
+| `POST`   | `/v1/users`                             | Create patient profile (`{ displayName, caregiverName }`)             |
+| `GET`    | `/v1/users/:id`                         | Fetch patient profile and settings                                    |
+| `PATCH`  | `/v1/users/:id`                         | Update patient settings (`{ contextEnabled, assistMode }`)            |
+| `GET`    | `/v1/users/:id/wordmap`                 | List learned personal substitutions and resolved utterances           |
+| `GET`    | `/v1/users/:id/insights`                | Weekly stats: fragment counts, first-try resolution rate trend        |
+| `POST`   | `/v1/simulate/fragment`                 | Simulate patient aphasic fragment directly (`{ userId, text }`)       |
+| `POST`   | `/v1/simulate/segments`                 | Simulate ambient or patient speech segments                           |
+| `POST`   | `/v1/confirmations/:id/answer`          | Answer active confirmation (`{ answer: "yes" \| "no" }`)              |
+| `GET`    | `/v1/confirmations/:id`                 | Fetch confirmation state                                              |
+| `GET`    | `/v1/runs?userId=&pipeline=`            | List execution traces                                                 |
+| `GET`    | `/v1/runs/:id`                          | Detailed DAG run trace with steps, latencies, and Qdrant hits         |
+| `GET`    | `/v1/memory?userId=&q=`                 | List or semantically search personal memory facts                     |
+| `DELETE` | `/v1/memory/:pointId?userId=`           | Delete a specific memory fact (privacy control)                       |
+| `POST`   | `/v1/memory/purge`                      | Purge all memory facts and word map entries for a patient             |
+| `GET`    | `/v1/stream?userId=`                    | Server-Sent Events (SSE) live pipeline observability feed             |
+| `GET`    | `/v1/audio/:id`                         | Serve synthesized MP3 audio for questions and resolved speech         |
 
 ---
 

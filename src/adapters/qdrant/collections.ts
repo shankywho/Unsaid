@@ -35,12 +35,19 @@ export async function bootstrapQdrant(dim: number = env.EMBEDDING_DIM): Promise<
             : undefined;
 
         if (existingSize && existingSize !== dim) {
-          logger.warn(
-            { collection: name, existingSize, requestedDim: dim },
-            'Qdrant collection dimension mismatch. Dropping and recreating collection...',
-          );
-          await qdrant.deleteCollection(name);
-          existing.delete(name);
+          if (env.QDRANT_ALLOW_RESET) {
+            logger.warn(
+              { collection: name, existingSize, requestedDim: dim },
+              'Qdrant collection dimension mismatch. QDRANT_ALLOW_RESET=true: dropping and recreating collection...',
+            );
+            await qdrant.deleteCollection(name);
+            existing.delete(name);
+          } else {
+            throw new Error(
+              `Qdrant collection '${name}' vector dimension mismatch: existing collection has size ${existingSize}, but requested EMBEDDING_DIM is ${dim}. ` +
+                `Recreating collections will drop all existing vectors. Set QDRANT_ALLOW_RESET=true or run 'pnpm qdrant:reset' to recreate.`,
+            );
+          }
         }
       } catch (err) {
         logger.warn({ collection: name, err }, 'Failed to inspect existing collection config');

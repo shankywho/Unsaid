@@ -19,6 +19,7 @@ const schema = z.object({
   QDRANT_URL: z.string().default('http://localhost:6333'),
   QDRANT_API_KEY: z.string().default(''),
   QDRANT_COLLECTION_PREFIX: z.string().default(''),
+  QDRANT_ALLOW_RESET: bool,
 
   LYZR_API_KEY: z.string().default(''),
   LYZR_INFERENCE_URL: z.string().default('https://agent-prod.studio.lyzr.ai/v3/inference/chat/'),

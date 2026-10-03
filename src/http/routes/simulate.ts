@@ -27,7 +27,7 @@ const segmentsSchema = z.object({
   ),
 });
 
-simulateRouter.post(['/simulate/fragment', '/simulate/assist'], async (req, res, next) => {
+simulateRouter.post('/simulate/fragment', async (req, res, next) => {
   try {
     const { userId, text } = fragmentSchema.parse(req.body);
     const result = await runAssistPipeline({

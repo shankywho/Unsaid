@@ -15,12 +15,9 @@
     "format": "prettier --write .",
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx scripts/eval.ts",
-    "eval:ablation": "tsx scripts/eval.ts",
-    "replay": "tsx scripts/replay-omi.ts",
     "replay:omi": "tsx scripts/replay-omi.ts",
     "lyzr:setup": "tsx scripts/lyzr-setup.ts",
     "qdrant:reset": "tsx scripts/reset-qdrant.ts",
-    "db:reset-qdrant": "tsx scripts/reset-qdrant.ts",
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
     "postinstall": "prisma generate"

@@ -95,7 +95,7 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 
 ## Audit & Critical Refinements
 
-- Embedding Dimension Safety: `bootstrapQdrant` now queries `qdrant.getCollection(name)`, inspects `vectors.size`, and if it does not match `env.EMBEDDING_DIM` (e.g., 256 for mock testing vs 1536 for OpenAI `text-embedding-3-small`), drops and recreates the collection with an explicit warning, avoiding runtime upsert crashes. Added `pnpm qdrant:reset` (`scripts/reset-qdrant.ts`).
+- Embedding Dimension Safety: `bootstrapQdrant` queries `qdrant.getCollection(name)` and inspects `vectors.size`. If it does not match `env.EMBEDDING_DIM` (e.g. 256 for mock testing vs 1536 for OpenAI `text-embedding-3-small`), it throws a descriptive error by default to prevent accidental data loss. It only drops/recreates collections if `QDRANT_ALLOW_RESET=true`. Explicit reset is available via `pnpm qdrant:reset` (`scripts/reset-qdrant.ts`).
 - Persona Disambiguation: Clarified throughout documentation and seed data that **Mohan Lal Sharma** is the patient (68yo), while **Ramesh Sharma** is his son and primary caregiver.
 - Clinical Accuracy: Corrected aphasia classification to **non-fluent (Broca's / expressive) aphasia**, eliminating contradictory references to fluent anomic variants.
-- Route & Port Consistency: Standardized on port 8080 across all docs, configs, and `.env.example`. Supported `/v1/simulate/assist` as an alias for `/v1/simulate/fragment`. Added npm script aliases `eval:ablation` and `replay:omi`.
+- Route & Command Canonicalization: Standardized on port 8080 across all docs, configs, and `.env.example`. Removed duplicate aliases to enforce single canonical endpoints and scripts: route is strictly `POST /v1/simulate/fragment`, eval command is strictly `pnpm eval`, and replay command is strictly `pnpm replay:omi`.
