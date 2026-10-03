@@ -1,0 +1,194 @@
+[
+  {
+    "fragment": "Sunday… Priya… cake… no",
+    "goldIntent": "Tell Priya not to bring cake on Sunday due to sugar restriction",
+    "goldKeywords": ["Priya", "cake", "Sunday", "sugar"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "water… Ramesh… bill",
+    "goldIntent": "Ask Ramesh if the municipal water bill was paid",
+    "goldKeywords": ["Ramesh", "water", "bill"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "the… the thing… eyes… broken",
+    "goldIntent": "Inquire about status of repaired reading glasses",
+    "goldKeywords": ["glasses", "repair", "eyes"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "car… park… six",
+    "goldIntent": "Time for evening walk to the park at 6 PM",
+    "goldKeywords": ["walk", "park", "6 PM"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Priya… Sunday… what time?",
+    "goldIntent": "Ask what time daughter Priya will arrive on Sunday",
+    "goldKeywords": ["Priya", "Sunday", "time"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Aarav… bat… Saturday",
+    "goldIntent": "Ask about Aarav's cricket match on Saturday",
+    "goldKeywords": ["Aarav", "cricket", "match", "Saturday"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "physio… not today?… Thursday",
+    "goldIntent": "Confirm that physio session was moved to Thursday",
+    "goldKeywords": ["physio", "Thursday"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "shawl… blue… where?",
+    "goldIntent": "Ask where the blue shawl is",
+    "goldKeywords": ["blue", "shawl"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Tuesday… temple… Ramesh",
+    "goldIntent": "Ask Ramesh if they are going to the temple on Tuesday",
+    "goldKeywords": ["temple", "Tuesday", "Ramesh"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Doctor Mehta… sugar… medicine",
+    "goldIntent": "Ask about Dr. Mehta's sugar and medication instructions",
+    "goldKeywords": ["Dr. Mehta", "sugar"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "chai… nahi… sugar",
+    "goldIntent": "Remind that tea must be served without sugar",
+    "goldKeywords": ["chai", "tea", "no sugar"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "radio… song… battery",
+    "goldIntent": "Want to listen to the vintage radio and check battery",
+    "goldKeywords": ["radio", "battery"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "glasses… optician… pickup",
+    "goldIntent": "Check if reading glasses are ready for pickup at optician",
+    "goldKeywords": ["glasses", "optician", "pickup"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Pri… beti… come",
+    "goldIntent": "Happy that daughter Priya is coming to visit",
+    "goldKeywords": ["Priya", "daughter", "visit"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "walk… Sunita… 6",
+    "goldIntent": "Ready to go for the 6 PM evening walk with Sunita",
+    "goldKeywords": ["walk", "Sunita", "6 PM"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Ramesh… bill… office",
+    "goldIntent": "Ask if Ramesh paid the water bill from office",
+    "goldKeywords": ["Ramesh", "bill"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Aarav… school… cricket… win",
+    "goldIntent": "Ask how Aarav's cricket match went",
+    "goldKeywords": ["Aarav", "cricket"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "arm… exercises… twice",
+    "goldIntent": "Remind caregiver about doing arm exercises from physio",
+    "goldKeywords": ["arm", "exercises", "physio"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "specs… newspaper… cannot",
+    "goldIntent": "Cannot read newspaper without repaired glasses",
+    "goldKeywords": ["glasses", "newspaper", "read"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "sweet… mithai… mana",
+    "goldIntent": "State that sweets are forbidden per doctor orders",
+    "goldKeywords": ["sweets", "forbidden", "doctor"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "temple… Tuesday… bell",
+    "goldIntent": "Confirm Tuesday morning visit to the temple",
+    "goldKeywords": ["temple", "Tuesday"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "Priya… Pune… bus",
+    "goldIntent": "Mention Priya traveling from Pune by bus",
+    "goldKeywords": ["Priya", "Pune", "bus"],
+    "requiresContext": true
+  },
+  {
+    "fragment": "water… drink… now",
+    "goldIntent": "Request a glass of drinking water",
+    "goldKeywords": ["water", "drink"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "tired… sleep… bed",
+    "goldIntent": "Express feeling tired and wanting to rest in bed",
+    "goldKeywords": ["tired", "sleep", "bed"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "cold… fan… off",
+    "goldIntent": "Request to turn off the ceiling fan because of feeling cold",
+    "goldKeywords": ["cold", "fan", "off"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "window… open… air",
+    "goldIntent": "Request to open the window for fresh air",
+    "goldKeywords": ["window", "open", "air"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "head… ache… medicine",
+    "goldIntent": "Express having a headache and requesting pain relief medicine",
+    "goldKeywords": ["headache", "medicine"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "food… lunch… hungry",
+    "goldIntent": "State that they are hungry and ask for lunch",
+    "goldKeywords": ["food", "lunch", "hungry"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "hot… light… close",
+    "goldIntent": "Request to draw curtains or switch off bright light",
+    "goldKeywords": ["light", "hot"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "thank you… Sunita",
+    "goldIntent": "Express gratitude to caregiver Sunita",
+    "goldKeywords": ["thank you", "Sunita"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "chair… sit… outside",
+    "goldIntent": "Request to sit outside on the balcony chair",
+    "goldKeywords": ["chair", "outside", "sit"],
+    "requiresContext": false
+  },
+  {
+    "fragment": "music… play… old",
+    "goldIntent": "Request to play old songs on the radio",
+    "goldKeywords": ["music", "songs", "radio"],
+    "requiresContext": false
+  }
+]

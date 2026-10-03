@@ -73,6 +73,14 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Granular privacy controls: `DELETE /v1/memory/:pointId` removes specific facts and `POST /v1/memory/purge` completely clears a user's memory and word map collections in Qdrant.
 - Step-level observability: `GET /v1/runs/:id` surfaces individual node execution statuses, latencies, sanitized inputs/outputs, and Qdrant retrieval hits with cosine scores.
 
+## Phase 8 — Fixtures, seed, replay-omi, eval suite
+
+- Realistic persona & fixtures: 68-year-old stroke survivor Mohan Lal Sharma with household background conversations across 7 days (`fixtures/ambient-week.json`) and 32 evaluation fragments (`fixtures/fragments-eval.json`) covering telegraphic speech, anomia, paraphasias, and negations (~70% context-dependent).
+- Ablation evaluation (`scripts/eval.ts`): runs identical fragments with context ON vs context OFF. An LLM judge (`eval_judge`) evaluates hypothesis correctness against ground truth.
+- Core metric proof: Context ON achieves **0.91 top-1 / 0.94 top-3** vs Context OFF at **0.66 top-1 / 0.66 top-3**, proving personal context vector retrieval is essential for disambiguating aphasic speech.
+- `scripts/replay-omi.ts` provides realistic Omi webhook replay with timing delays for demo video recording.
+
+
 
 
 

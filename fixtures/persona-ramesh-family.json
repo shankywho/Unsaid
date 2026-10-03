@@ -1,0 +1,54 @@
+{
+  "patient": {
+    "name": "Mohan Lal Sharma",
+    "age": 68,
+    "condition": "Post-stroke expressive aphasia",
+    "nativeLanguage": "Hindi",
+    "spokenLanguages": ["Hindi", "English"],
+    "notes": "Struggles with word retrieval and grammatical function words. Retains intact cognitive comprehension."
+  },
+  "family": [
+    {
+      "name": "Ramesh Sharma",
+      "relation": "Son",
+      "role": "Lives with Mohan, manages household utilities, bank accounts, and bills",
+      "phone": "+91-98200-11223"
+    },
+    {
+      "name": "Priya Sharma",
+      "relation": "Daughter",
+      "role": "Lives in Pune, software engineer, visits on weekends (Sundays)",
+      "aliases": ["beti", "Pri"]
+    },
+    {
+      "name": "Aarav Sharma",
+      "relation": "Grandson",
+      "age": 8,
+      "role": "Plays school cricket, plays board games with Mohan"
+    }
+  ],
+  "caregiver": {
+    "name": "Sunita",
+    "role": "Daily home nurse and caregiver, prepares meals, oversees medication schedule"
+  },
+  "doctor": {
+    "name": "Dr. Mehta",
+    "specialty": "Neurologist & Geriatrician",
+    "instructions": [
+      "Strict sugar restriction: avoid sweets, white sugar, and commercial desserts",
+      "Daily gentle evening walk in the neighborhood park at 6 PM",
+      "Blood pressure check every morning"
+    ]
+  },
+  "routines": [
+    { "name": "Morning Chai", "time": "07:30 AM", "details": "Ginger tea with no added sugar" },
+    { "name": "Evening Walk", "time": "06:00 PM", "details": "20-minute walk to the community park with Sunita" },
+    { "name": "Temple Visit", "time": "Tuesday morning", "details": "Hanuman temple visit with Ramesh" },
+    { "name": "Cricket on TV", "time": "Weekend afternoons", "details": "Watches IPL matches with Aarav" }
+  ],
+  "objects": [
+    { "name": "Reading glasses", "aliases": ["chashma", "specs"], "status": "frame cracked, sent to optical shop for repair" },
+    { "name": "Blue shawl", "details": "Gift from daughter Priya, keeps in easy chair" },
+    { "name": "Vintage radio", "details": "Plays old Hindi music in the afternoon" }
+  ]
+}
