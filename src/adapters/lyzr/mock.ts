@@ -1088,24 +1088,44 @@ export class MockLyzrClient implements LyzrClient {
         const hypInt = (input.hypothesisIntent || '').toLowerCase();
         const combined = `${hypSent} ${hypInt}`;
 
-        const goldWords = gold
-          .replace(/[.,?!]/g, '')
-          .split(/\s+/)
-          .filter(
-            (w: string) =>
-              w.length > 3 &&
-              !['please', 'tell', 'that', 'with', 'about', 'some', 'from', 'this', 'what'].includes(w),
-          );
+        const frag = (input.fragment || '')
+          .toLowerCase()
+          .replace(/[….,?!]/g, ' ')
+          .trim();
+        const isEcho =
+          combined.includes('literal topic') ||
+          combined.includes('trying to say') ||
+          combined.includes('no personal memory context');
 
-        const matches = goldWords.filter((w: string) => combined.includes(w));
-        const ratio = goldWords.length > 0 ? matches.length / goldWords.length : 0;
-        const isMatch = ratio >= 0.4 || combined.includes(gold);
+        // Extract required keywords
+        const keywords: string[] =
+          Array.isArray(input.goldKeywords) && input.goldKeywords.length > 0
+            ? input.goldKeywords.map((k: string) => k.toLowerCase())
+            : gold
+                .replace(/[.,?!]/g, '')
+                .split(/\s+/)
+                .filter(
+                  (w: string) =>
+                    w.length > 3 &&
+                    !['please', 'tell', 'that', 'with', 'about', 'some', 'from', 'this', 'what'].includes(w),
+                );
+
+        const matches = keywords.filter((k: string) => {
+          const parts = k.split(/\s+/);
+          return parts.every((p) => combined.includes(p));
+        });
+
+        const ratio = keywords.length > 0 ? matches.length / keywords.length : 0;
+        const isMatch =
+          !isEcho && (ratio >= 0.75 || (keywords.length <= 2 && ratio === 1.0) || combined.includes(gold));
 
         return JSON.stringify({
           match: isMatch,
           reason: isMatch
             ? `Hypothesis covers key semantics: ${matches.join(', ')}`
-            : `Missing critical concepts from gold intent: ${gold}`,
+            : isEcho
+              ? `Unresolved surface echo without personal context: ${frag}`
+              : `Missing critical concepts (${keywords.filter((k) => !matches.includes(k)).join(', ')}) from gold intent: ${gold}`,
         });
       }
 

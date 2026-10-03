@@ -75,9 +75,10 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 
 ## Phase 8 — Fixtures, seed, replay-omi, eval suite
 
-- Realistic persona & fixtures: 68-year-old stroke survivor Mohan Lal Sharma with household background conversations across 7 days (`fixtures/ambient-week.json`) and 32 evaluation fragments (`fixtures/fragments-eval.json`) covering telegraphic speech, anomia, paraphasias, and negations (~70% context-dependent).
+- Realistic persona & fixtures: 68-year-old stroke survivor **Mohan Lal Sharma** recovering from left-hemisphere stroke with moderate **non-fluent (Broca's / expressive) aphasia**. Son **Ramesh Sharma** manages household utilities and logistics; daughter Priya visits on Sundays; grandson Aarav plays cricket; Sunita provides daily care; Dr. Mehta prescribes sugar restriction.
+- Dataset: 32 synthetic clinical scenario fragments (`fixtures/fragments-eval.json`) based on speech-language pathology literature (~70% context-dependent, 10 self-contained daily requests).
 - Ablation evaluation (`scripts/eval.ts`): runs identical fragments with context ON vs context OFF. An LLM judge (`eval_judge`) evaluates hypothesis correctness against ground truth.
-- Core metric proof: Context ON achieves **0.91 top-1 / 0.94 top-3** vs Context OFF at **0.66 top-1 / 0.66 top-3**, proving personal context vector retrieval is essential for disambiguating aphasic speech.
+- Mock-mode smoke test baseline: In mock mode, Context OFF scores **0.31 top-1** (resolving exactly the 10 self-contained fragments, while failing the 22 context-dependent fragments where context is missing) and **0.69 top-3**. Context ON achieves **0.72 top-1 / 0.81 top-3**. This is explicitly labeled as a pre-API key offline smoke test to validate DAG mechanics; live LLM benchmarks with real latencies (1.5–3.5s) will be recorded once external keys are configured.
 - `scripts/replay-omi.ts` provides realistic Omi webhook replay with timing delays for demo video recording.
 
 ## Phase 9 — Documentation and Diagrams
@@ -91,3 +92,10 @@ Every assumption made while building Unsaid, and why. Newest phase last.
 - Caregiver insights endpoint: `GET /v1/users/:id/insights` calculates communication metrics over time (e.g., confirmations, top recurring word map substitutions, active personal facts) to help speech therapists and family members track communication progress.
 - Raw ambient retention cleanup: `cleanupQueue.ts` schedules a recurring daily worker via BullMQ's modern `upsertJobScheduler` to purge raw ambient transcripts older than 30 days while preserving extracted semantic memories, satisfying strict privacy policies.
 - Graceful shutdown lifecycle: worker process handles SIGINT and SIGTERM to stop background queues and close Prisma and Redis connections cleanly without dropping active jobs.
+
+## Audit & Critical Refinements
+
+- Embedding Dimension Safety: `bootstrapQdrant` now queries `qdrant.getCollection(name)`, inspects `vectors.size`, and if it does not match `env.EMBEDDING_DIM` (e.g., 256 for mock testing vs 1536 for OpenAI `text-embedding-3-small`), drops and recreates the collection with an explicit warning, avoiding runtime upsert crashes. Added `pnpm qdrant:reset` (`scripts/reset-qdrant.ts`).
+- Persona Disambiguation: Clarified throughout documentation and seed data that **Mohan Lal Sharma** is the patient (68yo), while **Ramesh Sharma** is his son and primary caregiver.
+- Clinical Accuracy: Corrected aphasia classification to **non-fluent (Broca's / expressive) aphasia**, eliminating contradictory references to fluent anomic variants.
+- Route & Port Consistency: Standardized on port 8080 across all docs, configs, and `.env.example`. Supported `/v1/simulate/assist` as an alias for `/v1/simulate/fragment`. Added npm script aliases `eval:ablation` and `replay:omi`.
