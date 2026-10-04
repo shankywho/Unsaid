@@ -1,4 +1,5 @@
-# Render Blueprint: API only. Postgres = Neon, Redis = Upstash, Qdrant = Qdrant Cloud (values marked sync:false are
+# Render Blueprint: API only. The local embedding model needs ~450 MB RAM: use plan standard (2 GB) if starter runs out of memory.
+# Postgres = Neon, Redis = Upstash, Qdrant = Qdrant Cloud (values marked sync:false are
 # entered in the Render dashboard; they are never stored in git).
 services:
   - type: web
@@ -13,7 +14,7 @@ services:
       - { key: MOCK_EXTERNALS, value: 'false' }
       - { key: LLM_PROVIDER, value: lyzr }
       - { key: TRUST_PROXY, value: '1' }
-      - { key: EMBEDDING_DIM, value: '1536' }
+      - { key: AUTH_DISABLED, value: 'true' }
       - { key: LYZR_INFERENCE_URL, value: 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/' }
       - { key: API_KEY, generateValue: true }
       - { key: SESSION_SECRET, generateValue: true }
@@ -30,8 +31,5 @@ services:
       - { key: LYZR_AGENT_CONFIRM_ID, sync: false }
       - { key: LYZR_AGENT_LEARNER_ID, sync: false }
       - { key: LYZR_AGENT_EVAL_JUDGE_ID, sync: false }
-      - { key: OPENAI_API_KEY, sync: false }
-      - { key: DEMO_EMAIL, sync: false }
-      - { key: DEMO_PASSWORD, sync: false }
       - { key: CORS_ORIGINS, sync: false }
       - { key: PUBLIC_BASE_URL, sync: false }

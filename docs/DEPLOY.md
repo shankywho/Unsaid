@@ -39,18 +39,18 @@ instructions in Lyzr Studio (JSON response format, `gpt-4o-mini`).
 
 Full list with comments: [`.env.prod.example`](../.env.prod.example). Required for production:
 
-| Variable                                                    | Notes                                                          |
-| ----------------------------------------------------------- | -------------------------------------------------------------- |
-| `NODE_ENV=production`                                       | disables `/debug`, `/docs` (unless `ENABLE_DOCS=true`)         |
-| `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `QDRANT_API_KEY` | from step 1                                                    |
-| `MOCK_EXTERNALS=false`, `LLM_PROVIDER=lyzr`                 | Lyzr is the agent path; Groq is a dev fallback only            |
-| `LYZR_API_KEY` + `LYZR_AGENT_*_ID` (7)                      | from step 2                                                    |
-| `OPENAI_API_KEY`, `EMBEDDING_MODEL`, `EMBEDDING_DIM`        | embeddings + TTS                                               |
-| `API_KEY`, `SESSION_SECRET`, `OMI_WEBHOOK_SECRET`           | step 0                                                         |
-| `DEMO_EMAIL`, `DEMO_PASSWORD`                               | the one login for the future frontend                          |
-| `CORS_ORIGINS`                                              | frontend origin(s), comma separated                            |
-| `TRUST_PROXY=1`                                             | correct client IPs for rate limiting behind the platform proxy |
-| `PUBLIC_BASE_URL`                                           | the API's public https URL                                     |
+| Variable                                                    | Notes                                                                  |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `NODE_ENV=production`                                       | disables `/debug`, `/docs` (unless `ENABLE_DOCS=true`)                 |
+| `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, `QDRANT_API_KEY` | from step 1                                                            |
+| `MOCK_EXTERNALS=false`, `LLM_PROVIDER=lyzr`                 | Lyzr is the agent path; Groq is a dev fallback only                    |
+| `LYZR_API_KEY` + `LYZR_AGENT_*_ID` (7)                      | from step 2                                                            |
+| `OPENAI_API_KEY` (optional)                                 | empty = local embeddings (384-d, needs ~450 MB RAM) and browser speech |
+| `API_KEY`, `SESSION_SECRET`, `OMI_WEBHOOK_SECRET`           | step 0                                                                 |
+| `AUTH_DISABLED=true`                                        | open console, no login (a public URL is then readable by anyone)       |
+| `CORS_ORIGINS`                                              | frontend origin(s), comma separated                                    |
+| `TRUST_PROXY=1`                                             | correct client IPs for rate limiting behind the platform proxy         |
+| `PUBLIC_BASE_URL`                                           | the API's public https URL                                             |
 
 ## 4A. Railway
 
@@ -72,7 +72,7 @@ Run these in the platform shell (Railway: `railway run` / Render: Shell tab), wh
 
 ```bash
 npx prisma migrate deploy        # already done by pre-deploy; safe to repeat
-node dist/scripts/seed.js        # demo persona + a week of ambient memory (needs OPENAI_API_KEY)
+node dist/scripts/seed.js        # demo persona + a week of ambient memory
 ```
 
 Seeding is optional for Omi-only use (the system learns from live conversation) but the demo is far stronger with it.
@@ -119,3 +119,10 @@ one machine (put a TLS reverse proxy such as Caddy in front and set `TRUST_PROXY
 - Rate limiting is per-instance (in-memory). Run one instance, or put a limiter at the proxy if you scale out.
 - Audio files are written to `AUDIO_DIR` (`/data/audio` in the image). On platforms with ephemeral disks, old audio links
   break after a redeploy; attach a volume to `/data` if that matters.
+
+## 7. Frontend on Vercel
+
+1. Edit `web/vercel.json`: replace `YOUR-API-HOST` in the two rewrites with the Render host (for example `unsaid-api.onrender.com`). The browser then talks to Vercel only, so no CORS setup is needed.
+2. Vercel → Add New Project → import the GitHub repo → **Root Directory `web`**, framework Vite, install command `pnpm install`, build command `pnpm build`, output `dist`. Keep "Include source files outside of the Root Directory" **on**: the build reads `../docs/eval` and `../fixtures`.
+3. Optional env vars: `VITE_GITHUB_URL`, `VITE_DEMO_VIDEO_URL`, `VITE_GITHUB_STARS`.
+4. Deploy, then set Render's `CORS_ORIGINS` to the Vercel URL and `PUBLIC_BASE_URL` to the Render URL.
