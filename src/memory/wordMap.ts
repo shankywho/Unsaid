@@ -189,3 +189,76 @@ export async function upsertSubstitution(
 
   logger.info({ userId, said, meant, kind }, 'Upserted word map substitution');
 }
+
+const COMMON_TRANSLATIONS: Record<string, string[]> = {
+  beti: ['daughter', 'girl'],
+  beta: ['son', 'boy'],
+  chai: ['tea'],
+  pani: ['water'],
+  nahi: ['no', 'not', 'never'],
+  kaha: ['where'],
+  kya: ['what'],
+  dadu: ['grandfather', 'grandpa'],
+  mana: ['forbidden', 'refuse', 'not allowed', 'denied'],
+};
+
+/**
+ * Validates whether a candidate pair is a TRUE aphasic substitution (patient said X, meant a different word Y)
+ * vs a language translation (beti -> daughter) or time/number formatting expansion (six -> 6 PM).
+ */
+export function isTrueSubstitution(said: string, meant: string): boolean {
+  const s = said.trim().toLowerCase();
+  const m = meant.trim().toLowerCase();
+
+  // 1. Identity or empty
+  if (!s || !m || s === m) return false;
+
+  // 2. Time/number formatting expansions (e.g. "six" -> "6 PM", "6" -> "6 PM", "twice" -> "2 times")
+  const timeRegex = /^\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i;
+  const numWords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  if (numWords.includes(s) && (timeRegex.test(m) || m.includes('pm') || m.includes('am'))) {
+    return false;
+  }
+  if (/^\d+$/.test(s) && (timeRegex.test(m) || m.includes('pm') || m.includes('am'))) {
+    return false;
+  }
+  if ((s === 'twice' || s === '2') && (m.includes('2') || m.includes('twice'))) {
+    return false;
+  }
+
+  // 3. Known Hindi/English translations
+  if (COMMON_TRANSLATIONS[s] && COMMON_TRANSLATIONS[s].some((trans) => m.includes(trans))) {
+    return false;
+  }
+
+  // 4. Meant phrase simply contains said token (e.g., "park" -> "park at 6 PM")
+  const meantTokens = m.split(/[\s,.;:!?…]+/).filter(Boolean);
+  if (meantTokens.includes(s)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Applies word map substitutions by REPLACING the said word with the meant word.
+ * It NEVER combines both words together.
+ */
+export function applySubstitutions(
+  fragment: string,
+  substitutions: Array<{ said?: string; meant?: string }>,
+): string {
+  let result = fragment;
+  for (const sub of substitutions) {
+    if (!sub.said || !sub.meant) continue;
+    const s = sub.said.trim();
+    const m = sub.meant.trim();
+    if (!s || !m) continue;
+
+    // Use word-boundary regex if possible, handling ellipsis and punctuation
+    const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(?<=^|[\\s….,?!])${escaped}(?=[\\s….,?!]|$)`, 'gi');
+    result = result.replace(regex, m);
+  }
+  return result;
+}

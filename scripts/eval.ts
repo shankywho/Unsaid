@@ -35,6 +35,12 @@ export interface ModeResult {
   total: number;
   top1Hits: number;
   top3Hits: number;
+  reqContextTotal: number;
+  reqContextHitsTop1: number;
+  reqContextHitsTop3: number;
+  noContextTotal: number;
+  noContextHitsTop1: number;
+  noContextHitsTop3: number;
   stepStats: Record<string, StepLatencyStats>;
 }
 
@@ -143,6 +149,12 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
     console.log(`\nEvaluating: [${modeName}] ...`);
     let top1Hits = 0;
     let top3Hits = 0;
+    let reqContextHitsTop1 = 0;
+    let reqContextHitsTop3 = 0;
+    let noContextHitsTop1 = 0;
+    let noContextHitsTop3 = 0;
+    let reqContextTotal = 0;
+    let noContextTotal = 0;
     const pipelineLatencies: number[] = [];
     const stepRecords: Record<string, number[]> = {
       classify: [],
@@ -211,6 +223,7 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
             hypothesisIntent: top1.intent,
             goldIntent: item.goldIntent,
             goldKeywords: item.goldKeywords,
+            rubric: 'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
           },
           { userId: user.id },
         );
@@ -234,6 +247,7 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
                 hypothesisIntent: hyp.intent,
                 goldIntent: item.goldIntent,
                 goldKeywords: item.goldKeywords,
+                rubric: 'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
               },
               { userId: user.id },
             );
@@ -245,6 +259,16 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
             }
           }
         }
+      }
+
+      if (item.requiresContext) {
+        reqContextTotal++;
+        if (top1Match) reqContextHitsTop1++;
+        if (top3Match) reqContextHitsTop3++;
+      } else {
+        noContextTotal++;
+        if (top1Match) noContextHitsTop1++;
+        if (top3Match) noContextHitsTop3++;
       }
 
       const matchLabel = top1Match ? 'Top-1 ✓' : top3Match ? 'Top-3 ✓' : '✗';
@@ -278,6 +302,12 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
       total,
       top1Hits,
       top3Hits,
+      reqContextTotal,
+      reqContextHitsTop1,
+      reqContextHitsTop3,
+      noContextTotal,
+      noContextHitsTop1,
+      noContextHitsTop3,
       stepStats,
     };
   }
@@ -290,6 +320,21 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
     'mode         top1   top3   p50_latency_ms   avg_latency_ms',
     `context ON   ${resultOn.top1.toFixed(2)}   ${resultOn.top3.toFixed(2)}   ${resultOn.p50LatencyMs.toString().padEnd(16)} ${resultOn.avgLatencyMs}`,
     `context OFF  ${resultOff.top1.toFixed(2)}   ${resultOff.top3.toFixed(2)}   ${resultOff.p50LatencyMs.toString().padEnd(16)} ${resultOff.avgLatencyMs}`,
+  ].join('\n');
+
+  // Format requiresContext split table
+  const splitTable = [
+    'Mode         Subset                  Top-1 (Hits / N)       Top-3 (Hits / N)',
+    '------------ ----------------------- ---------------------- ----------------------',
+    `Context ON   requiresContext = true  ${resultOn.reqContextHitsTop1}/${resultOn.reqContextTotal} (${(resultOn.reqContextHitsTop1 / resultOn.reqContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
+      `${resultOn.reqContextHitsTop3}/${resultOn.reqContextTotal} (${(resultOn.reqContextHitsTop3 / resultOn.reqContextTotal * 100).toFixed(1)}%)`,
+    `Context ON   requiresContext = false ${resultOn.noContextHitsTop1}/${resultOn.noContextTotal} (${(resultOn.noContextHitsTop1 / resultOn.noContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
+      `${resultOn.noContextHitsTop3}/${resultOn.noContextTotal} (${(resultOn.noContextHitsTop3 / resultOn.noContextTotal * 100).toFixed(1)}%)`,
+    `Context OFF  requiresContext = true  ${resultOff.reqContextHitsTop1}/${resultOff.reqContextTotal} (${(resultOff.reqContextHitsTop1 / resultOff.reqContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
+      `${resultOff.reqContextHitsTop3}/${resultOff.reqContextTotal} (${(resultOff.reqContextHitsTop3 / resultOff.reqContextTotal * 100).toFixed(1)}%)`,
+    `Context OFF  requiresContext = false ${resultOff.noContextHitsTop1}/${resultOff.noContextTotal} (${(resultOff.noContextHitsTop1 / resultOff.noContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
+      `${resultOff.noContextHitsTop3}/${resultOff.noContextTotal} (${(resultOff.noContextHitsTop3 / resultOff.noContextTotal * 100).toFixed(1)}%)`,
+    '------------ ----------------------- ---------------------- ----------------------',
   ].join('\n');
 
   // Format per-step latency table for context ON
@@ -317,6 +362,10 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
   console.log('  EVALUATION ACCURACY BENCHMARK                      ');
   console.log('=====================================================\n');
   console.log(accuracyTable);
+  console.log('\n=====================================================');
+  console.log('  ACCURACY SPLIT BY requiresContext                  ');
+  console.log('=====================================================\n');
+  console.log(splitTable);
   console.log('\n=====================================================');
   console.log('  PER-STEP LATENCY BREAKDOWN (Context ON)            ');
   console.log('=====================================================\n');

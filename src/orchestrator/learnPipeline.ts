@@ -2,7 +2,7 @@ import { startRun, finishRun } from '../tracing/tracer';
 import { runDag, out } from './dag';
 import { runAgent } from '../agents/runAgent';
 import { LearnerOutputSchema, type LearnerOutput } from '../agents/schemas';
-import { upsertResolvedUtterance, upsertSubstitution } from '../memory/wordMap';
+import { upsertResolvedUtterance, upsertSubstitution, isTrueSubstitution } from '../memory/wordMap';
 import { bus } from '../tracing/events';
 import { adapters } from '../adapters';
 import { logger } from '../lib/logger';
@@ -54,10 +54,17 @@ export async function runLearnPipeline(input: LearnPipelineInput): Promise<{ run
             await upsertResolvedUtterance(userId, fragment, confirmedSentence);
           }
 
-          // 2. Save any learned substitutions
+          // 2. Save any learned substitutions (strictly true substitutions, not translations or time formats)
           if (learned?.substitutions) {
             for (const sub of learned.substitutions) {
-              await upsertSubstitution(userId, sub.said, sub.meant, 'SUBSTITUTION');
+              if (isTrueSubstitution(sub.said, sub.meant)) {
+                await upsertSubstitution(userId, sub.said, sub.meant, 'SUBSTITUTION');
+              } else {
+                logger.info(
+                  { userId, said: sub.said, meant: sub.meant },
+                  'Filtered out non-substitution (translation, time format, or identity)',
+                );
+              }
             }
           }
 

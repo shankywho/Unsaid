@@ -71,4 +71,53 @@ describe('Phase 6 — LEARN pipeline and WordMap feedback loop', () => {
     expect(topHypothesis.sentence).toBe(confirmedSentence);
     expect(topHypothesis.confidence).toBeGreaterThan(0.85);
   });
+
+  describe('Word Map Rules: Substitution Replacement & Learner Filtering', () => {
+    it('Rule 1: isTrueSubstitution accepts true paraphasias and rejects translations and time formats', async () => {
+      const { isTrueSubstitution } = await import('../src/memory/wordMap');
+
+      // True aphasic substitutions / paraphasias
+      expect(isTrueSubstitution('car', 'walk')).toBe(true);
+      expect(isTrueSubstitution('tea', 'coffee')).toBe(true);
+      expect(isTrueSubstitution('thing', 'glasses')).toBe(true);
+      expect(isTrueSubstitution('apple', 'medicine')).toBe(true);
+
+      // Rejects translations (Hindi/English bilingual words)
+      expect(isTrueSubstitution('beti', 'daughter')).toBe(false);
+      expect(isTrueSubstitution('chai', 'tea')).toBe(false);
+      expect(isTrueSubstitution('pani', 'water')).toBe(false);
+      expect(isTrueSubstitution('kaha', 'where')).toBe(false);
+      expect(isTrueSubstitution('nahi', 'no')).toBe(false);
+      expect(isTrueSubstitution('mana', 'forbidden')).toBe(false);
+
+      // Rejects time / number formatting expansions
+      expect(isTrueSubstitution('six', '6 PM')).toBe(false);
+      expect(isTrueSubstitution('6', '6 PM')).toBe(false);
+      expect(isTrueSubstitution('seven', '7:00')).toBe(false);
+      expect(isTrueSubstitution('twice', '2 times')).toBe(false);
+
+      // Rejects identical or substring tokens
+      expect(isTrueSubstitution('park', 'park')).toBe(false);
+      expect(isTrueSubstitution('park', 'evening walk in the park')).toBe(false);
+      expect(isTrueSubstitution('', 'walk')).toBe(false);
+    });
+
+    it('Rule 2: applySubstitutions REPLACES said word with meant word and never combines both', async () => {
+      const { applySubstitutions } = await import('../src/memory/wordMap');
+
+      // Replaces "car" with "walk", never combining into "take the car for a walk"
+      const result = applySubstitutions('car… today… six', [{ said: 'car', meant: 'walk' }]);
+      expect(result).toBe('walk… today… six');
+      expect(result.includes('car')).toBe(false);
+
+      // Replaces multiple substitutions cleanly
+      const multi = applySubstitutions('the thing… eyes… broken', [
+        { said: 'the thing', meant: 'reading glasses' },
+        { said: 'eyes', meant: 'optician' },
+      ]);
+      expect(multi).toBe('reading glasses… optician… broken');
+      expect(multi.includes('the thing')).toBe(false);
+    });
+  });
 });
+

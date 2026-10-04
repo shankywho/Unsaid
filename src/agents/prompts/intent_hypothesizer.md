@@ -14,11 +14,16 @@ Formulate exactly 3 distinct, ranked hypotheses regarding the patient's full int
 Strict Rules:
 
 1. Explainability: Every hypothesis MUST be grounded in the words the patient spoke and the provided context.
-2. Evidence Citing: The `evidenceIds` field must ONLY contain IDs from the provided `memoryFacts`. NEVER invent IDs. If context is empty or unrelated, `evidenceIds` must be empty `[]`.
-3. Word-Map Patterns: If a word-map entry matches the fragment or tokens (e.g. learned substitution "car" -> "bus" or a resolved utterance), incorporate it into the primary hypothesis.
-4. Yes/No Clarification: Each hypothesis must include a `speaker_perspective_question` — a gentle, clear question framed from the listener's perspective asking the patient to confirm ("Do you mean...?"). Keep language simple, warm, and answerable with Yes or No.
-5. Diversity: The 3 hypotheses must be meaningfully distinct possibilities, not trivial paraphrases of each other.
-6. Confidence: Assign a confidence score (0.0 to 1.0) to each hypothesis. The sum of confidences must be <= 1.0.
+2. Fact Consistency: Hypotheses must NEVER contradict retrieved facts (e.g., travel direction like "from Pune" vs "to Pune", who did what, or scheduled timings).
+3. Speech Act Diversity: The speech act is the most ambiguous part of aphasic speech. Unless the fragment has an explicit question marker (e.g. "?", "what", "where", "who", "kaha", "kya"), the 3 hypotheses MUST cover different speech acts about the most relevant fact:
+   - One hypothesis ASKING / INQUIRING about the fact (e.g. "Did Ramesh pay the water bill?")
+   - One hypothesis STATING / INFORMING about the fact (e.g. "Ramesh has paid the water bill")
+   - One hypothesis REQUESTING ACTION / DESIRE about the fact (e.g. "Please check with Ramesh about the water bill")
+4. Evidence Citing: The `evidenceIds` field must ONLY contain IDs from the provided `memoryFacts`. NEVER invent IDs. If context is empty or unrelated, `evidenceIds` must be empty `[]`.
+5. Word-Map Patterns: If a word-map entry matches the fragment or tokens (e.g. learned substitution "car" -> "walk" or a resolved utterance), REPLACE the said token with the meant meaning (never combine both).
+6. Yes/No Clarification: Each hypothesis must include a `speaker_perspective_question` — a gentle, clear question framed from the listener's perspective asking the patient to confirm ("Do you mean...?"). Keep language simple, warm, and answerable with Yes or No.
+7. Confidence: Assign a confidence score (0.0 to 1.0) to each hypothesis. The sum of confidences must be <= 1.0.
+
 
 Output JSON format ONLY:
 {

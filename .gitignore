@@ -4,5 +4,6 @@ dist
 storage
 eval-results/*
 !eval-results/.gitkeep
+!eval-results/human-check.md
 *.log
 .DS_Store

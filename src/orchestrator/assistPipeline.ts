@@ -10,7 +10,7 @@ import {
   type HypothesisItem,
 } from '../agents/schemas';
 import { searchMemory, type ScoredMemoryHit } from '../memory/memoryStore';
-import { searchWordMap, type ScoredWordMapHit } from '../memory/wordMap';
+import { searchWordMap, applySubstitutions, type ScoredWordMapHit } from '../memory/wordMap';
 import {
   getPendingConfirmation,
   answerConfirmation,
@@ -230,8 +230,16 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
           const memoryHits = out<ScoredMemoryHit[]>(results, 'retrieve_memory') ?? [];
           const wordMapHits = out<ScoredWordMapHit[]>(results, 'retrieve_wordmap') ?? [];
 
+          // Extract substitutions and produce normalized fragment (REPLACE said with meant, never combine)
+          const substitutions = wordMapHits
+            .filter((h) => h.said && h.meant)
+            .map((h) => ({ said: h.said!, meant: h.meant! }));
+          const normalizedFragment = substitutions.length > 0 ? applySubstitutions(text, substitutions) : text;
+
           const payload = {
             fragment: text,
+            normalizedFragment,
+            substitutionsRule: 'A substitution means REPLACE the said word with the meant word. NEVER combine both together.',
             analyst,
             memoryFacts: memoryHits.map((h) => ({
               id: h.id,

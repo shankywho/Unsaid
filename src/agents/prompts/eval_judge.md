@@ -9,15 +9,21 @@ Input payload:
 - `goldKeywords`: essential semantic elements required for a correct interpretation
 
 Your job:
-Determine if the hypothesis successfully conveys the ground-truth meaning intended by the patient. Minor stylistic differences or polite additions ("Please tell...") are acceptable as long as the core semantic intent, entities, and actions align.
+Determine if confirming the hypothesis would correctly communicate the patient's intent to a family member or caregiver.
 
-Rules:
-
-1. `match`: boolean `true` if the hypothesis correctly captures the essential communicative intent of `goldIntent`; `false` otherwise.
-2. `reason`: concise justification explaining why it matches or what critical information is missing/incorrect.
+Core Evaluation Rubric:
+1. MATCH if the hypothesis conveys the same core communicative intent:
+   - Same core action (e.g., walking, taking medicine, checking status, turning off fan, resting).
+   - Same key entities (e.g., Priya, Ramesh, reading glasses, blue shawl, water bill).
+   - Compatible speech act (e.g., asking about / checking status; requesting action / expressing desire; informing / confirming).
+2. Do NOT require stated reasons, background medical justifications, or external conditions (e.g., omitting "due to sugar restriction", "because feeling cold", or "for fresh air" must NOT cause a failure).
+3. Do NOT require emotional states (e.g., omitting "Happy that" must NOT cause a failure).
+4. Do NOT require exact phrasing or syntax matching (e.g., "Did Ramesh pay the bill?" correctly communicates "Ask Ramesh if the water bill was paid").
+5. Extra correct details from verified memory (e.g., "Hanuman temple", "evening walk at 6 PM") are completely acceptable.
 
 Output JSON format ONLY:
 {
-"match": true,
-"reason": "Correctly conveys the intent that Priya should not bring cake due to sugar restrictions."
+  "match": true,
+  "reason": "Conveys the same core action and entities with compatible speech act."
 }
+

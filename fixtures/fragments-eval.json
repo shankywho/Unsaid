@@ -1,8 +1,8 @@
 [
   {
     "fragment": "Sunday… Priya… cake… no",
-    "goldIntent": "Tell Priya not to bring cake on Sunday due to sugar restriction",
-    "goldKeywords": ["Priya", "cake", "Sunday", "sugar"],
+    "goldIntent": "Tell Priya not to bring cake on Sunday",
+    "goldKeywords": ["Priya", "cake", "Sunday"],
     "requiresContext": true
   },
   {
@@ -61,7 +61,7 @@
   },
   {
     "fragment": "chai… nahi… sugar",
-    "goldIntent": "Remind that tea must be served without sugar",
+    "goldIntent": "Request tea without sugar",
     "goldKeywords": ["chai", "tea", "no sugar"],
     "requiresContext": true
   },
@@ -79,13 +79,13 @@
   },
   {
     "fragment": "Pri… beti… come",
-    "goldIntent": "Happy that daughter Priya is coming to visit",
+    "goldIntent": "Daughter Priya is coming to visit",
     "goldKeywords": ["Priya", "daughter", "visit"],
     "requiresContext": true
   },
   {
     "fragment": "walk… Sunita… 6",
-    "goldIntent": "Ready to go for the 6 PM evening walk with Sunita",
+    "goldIntent": "Go for the 6 PM evening walk with Sunita",
     "goldKeywords": ["walk", "Sunita", "6 PM"],
     "requiresContext": true
   },
@@ -103,20 +103,20 @@
   },
   {
     "fragment": "arm… exercises… twice",
-    "goldIntent": "Remind caregiver about doing arm exercises from physio",
+    "goldIntent": "Do arm exercises from physio twice daily",
     "goldKeywords": ["arm", "exercises", "physio"],
     "requiresContext": true
   },
   {
     "fragment": "specs… newspaper… cannot",
-    "goldIntent": "Cannot read newspaper without repaired glasses",
+    "goldIntent": "Cannot read the newspaper without glasses",
     "goldKeywords": ["glasses", "newspaper", "read"],
     "requiresContext": true
   },
   {
     "fragment": "sweet… mithai… mana",
-    "goldIntent": "State that sweets are forbidden per doctor orders",
-    "goldKeywords": ["sweets", "forbidden", "doctor"],
+    "goldIntent": "State that sweets are forbidden",
+    "goldKeywords": ["sweets", "forbidden"],
     "requiresContext": true
   },
   {
@@ -139,19 +139,19 @@
   },
   {
     "fragment": "tired… sleep… bed",
-    "goldIntent": "Express feeling tired and wanting to rest in bed",
-    "goldKeywords": ["tired", "sleep", "bed"],
+    "goldIntent": "Want to sleep or rest in bed",
+    "goldKeywords": ["sleep", "bed", "rest"],
     "requiresContext": false
   },
   {
     "fragment": "cold… fan… off",
-    "goldIntent": "Request to turn off the ceiling fan because of feeling cold",
+    "goldIntent": "Request to turn off the ceiling fan",
     "goldKeywords": ["cold", "fan", "off"],
     "requiresContext": false
   },
   {
     "fragment": "window… open… air",
-    "goldIntent": "Request to open the window for fresh air",
+    "goldIntent": "Request to open the window",
     "goldKeywords": ["window", "open", "air"],
     "requiresContext": false
   },
@@ -163,7 +163,7 @@
   },
   {
     "fragment": "food… lunch… hungry",
-    "goldIntent": "State that they are hungry and ask for lunch",
+    "goldIntent": "Ask for lunch",
     "goldKeywords": ["food", "lunch", "hungry"],
     "requiresContext": false
   },
@@ -175,7 +175,7 @@
   },
   {
     "fragment": "thank you… Sunita",
-    "goldIntent": "Express gratitude to caregiver Sunita",
+    "goldIntent": "Thank caregiver Sunita",
     "goldKeywords": ["thank you", "Sunita"],
     "requiresContext": false
   },

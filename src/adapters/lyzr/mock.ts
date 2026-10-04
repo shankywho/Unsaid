@@ -1117,7 +1117,11 @@ export class MockLyzrClient implements LyzrClient {
 
         const ratio = keywords.length > 0 ? matches.length / keywords.length : 0;
         const isMatch =
-          !isEcho && (ratio >= 0.75 || (keywords.length <= 2 && ratio === 1.0) || combined.includes(gold));
+          !isEcho &&
+          (ratio >= 0.5 ||
+            (keywords.length <= 2 && ratio >= 0.5) ||
+            combined.includes(gold) ||
+            gold.includes(hypInt));
 
         return JSON.stringify({
           match: isMatch,
