@@ -19,6 +19,8 @@ const ctx = await browser.newContext({
   deviceScaleFactor: 1,
 });
 const page = await ctx.newPage();
+const t0 = Date.now();
+const mark = (name) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0).padStart(3)}s] ${name}`);
 const wait = (ms) => page.waitForTimeout(ms);
 
 // a visible cursor, since screen recordings from the browser do not draw one
@@ -73,17 +75,18 @@ const section = async (sel) =>
     .evaluate((el) => el.getBoundingClientRect().top + window.scrollY)) - 90;
 
 /* ---------------- 1. Landing ---------------- */
+mark('landing');
 await moveTo(720, 460, 1);
 await page.goto(base + '/', { waitUntil: 'networkidle' });
-await wait(1500);
+await wait(1200);
 // the hero demo loop restarts a few seconds after load; let it play through once
-await wait(10800);
-await glide(await section('#how'), 2500);
-await wait(1800);
+await wait(5900);
+await glide(await section('#how'), 1800);
+await wait(1200);
 for (const y of [0.25, 0.5, 0.75]) {
   const h = await page.evaluate(() => document.querySelector('#how').getBoundingClientRect().height);
   await glide((await section('#how')) + h * y, 3000);
-  await wait(2500);
+  await wait(1350);
 }
 await glide(
   (await page.evaluate(
@@ -91,15 +94,16 @@ await glide(
   )) - 60,
   2500,
 );
-await wait(2850); // private by design
+await wait(1550); // private by design
 await glide(await section('#results'), 2500);
-await wait(4300);
+await wait(2350);
 await glide(await section('#faq'), 2500);
-await wait(2500);
+await wait(1350);
 await glide(0, 2500);
-await wait(1500);
+await wait(1200);
 
 /* ---------------- 2. Console: idle ---------------- */
+mark('console idle');
 await click(page.getByRole('link', { name: 'Open console' }).first());
 await page.waitForURL(/\/app\/live/);
 await page.getByTestId('conversation-idle').waitFor();
@@ -110,6 +114,7 @@ await pointAt(page.getByRole('region', { name: 'Reasoning' }), -150);
 await wait(2500);
 
 /* ---------------- 3. First fragment: confirmed on the first question ---------------- */
+mark('fragment 1');
 async function speak(fragment) {
   const input = page.getByLabel('Simulate a fragment of speech');
   await click(input);
@@ -139,6 +144,7 @@ await page.getByTestId('learn-followup').waitFor({ timeout: 30000 });
 await wait(5000);
 
 /* ---------------- 4. Second fragment: "No" moves to the next meaning ---------------- */
+mark('fragment 2 (No, then Yes)');
 await speak('water… Ramesh… bill');
 await yes.waitFor({ timeout: 70000 });
 await wait(3600);
@@ -151,6 +157,7 @@ await page.getByText('Spoken to caregiver').waitFor({ timeout: 30000 });
 await wait(4300);
 
 /* ---------------- 5. Memory ---------------- */
+mark('memory');
 await click(page.getByRole('link', { name: 'Memory' }));
 await page.getByRole('heading', { name: 'Memory', level: 1 }).waitFor();
 await wait(2850);
@@ -177,11 +184,13 @@ await click(dlg.getByRole('button', { name: 'Cancel' }));
 await wait(1500);
 
 /* ---------------- 6. Word map ---------------- */
+mark('word map');
 await click(page.getByRole('link', { name: 'Word map' }));
 await page.getByRole('heading', { name: 'Word map', level: 1 }).waitFor();
 await wait(4650);
 
 /* ---------------- 7. Runs and a trace ---------------- */
+mark('runs');
 await click(page.getByRole('link', { name: 'Runs' }));
 await page.getByRole('heading', { name: 'Runs', level: 1 }).waitFor();
 await wait(2500);
@@ -196,6 +205,7 @@ await glide(450, 3000);
 await wait(2850);
 
 /* ---------------- 8. Eval ---------------- */
+mark('eval');
 await click(page.getByRole('link', { name: 'Eval' }));
 await page.getByRole('heading', { name: 'Eval', level: 1 }).waitFor();
 await wait(4300);
@@ -203,6 +213,7 @@ await glide(420, 3000);
 await wait(3600);
 
 /* ---------------- 9. Back to Live, end ---------------- */
+mark('end on live');
 await click(page.getByRole('link', { name: 'Live' }));
 await wait(2850);
 
