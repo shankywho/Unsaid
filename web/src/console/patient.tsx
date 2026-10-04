@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMe } from '../api/hooks';
+import type { StreamStatus } from '../stream/useEventStream';
 
 interface Patient {
   id: string;
@@ -13,6 +14,14 @@ interface Ctx {
   select: (id: string) => void;
 }
 const C = createContext<Ctx>({ patients: [], select: () => undefined });
+
+/** Live pushes its SSE state here so the Omi chip in the top bar can show connection state. */
+interface StreamCtx {
+  status: StreamStatus;
+  setStatus: (s: StreamStatus) => void;
+}
+const S = createContext<StreamCtx>({ status: 'idle', setStatus: () => undefined });
+export const useStreamStatus = () => useContext(S);
 export const usePatient = () => useContext(C);
 
 const KEY = 'unsaid.patient';
@@ -36,5 +45,11 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   }, [id]);
   const patient = patients.find((p) => p.id === id) ?? patients[0];
   const value = useMemo(() => ({ patients, patient, select: setId }), [patients, patient]);
-  return <C.Provider value={value}>{children}</C.Provider>;
+  const [status, setStatus] = useState<StreamStatus>('idle');
+  const stream = useMemo(() => ({ status, setStatus }), [status]);
+  return (
+    <C.Provider value={value}>
+      <S.Provider value={stream}>{children}</S.Provider>
+    </C.Provider>
+  );
 }

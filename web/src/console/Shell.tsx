@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import { UNAUTHORIZED_EVENT, client, unwrap } from '../api/client';
 import { useMe, useOmiStatus, useSetContext } from '../api/hooks';
-import { PatientProvider, usePatient } from './patient';
-import { Button, StatusDot, Toggle } from '../design/primitives';
+import { PatientProvider, usePatient, useStreamStatus } from './patient';
+import { Chip, Select, StatusDot, Switch, Wordmark } from '../design/primitives';
 import { ErrorState, Skeleton } from '../design/feedback';
 import { cn } from '../design/cn';
 
@@ -27,7 +27,7 @@ const NAV = [
 ];
 
 function ago(iso: string | null | undefined): string {
-  if (!iso) return 'never';
+  if (!iso) return '';
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.round(s / 60)}m ago`;
@@ -35,12 +35,13 @@ function ago(iso: string | null | undefined): string {
   return `${Math.round(s / 86400)}d ago`;
 }
 
+/** One chip carries the whole connection story: Omi live / Simulated / Offline, plus the stream state. */
 export function OmiBadge({ userId }: { userId?: string }) {
   const { data, isError } = useOmiStatus(userId);
-  let tone: 'live' | 'sim' | 'idle' | 'danger' = 'idle';
+  const { status } = useStreamStatus();
+  let tone: 'live' | 'sim' | 'off' = 'off';
   let label = 'Omi offline';
   if (isError) {
-    tone = 'danger';
     label = 'Omi status unavailable';
   } else if (data) {
     const c = data.segmentsLast5Min;
@@ -52,50 +53,50 @@ export function OmiBadge({ userId }: { userId?: string }) {
       label = 'Simulated';
     }
   }
+  const dropped = status === 'reconnecting';
+  if (dropped) {
+    tone = 'off';
+    label = 'Reconnecting';
+  }
   return (
-    <span
-      className="inline-flex items-center gap-2 text-[14px] text-ink"
-      title="Source of the most recent transcript segments"
-    >
-      <StatusDot tone={tone} pulse={tone === 'live'} />
+    <Chip tone={tone === 'live' ? 'live' : tone === 'off' ? 'danger' : 'neutral'} className="shrink-0">
+      <StatusDot tone={tone === 'live' ? 'live' : tone === 'sim' ? 'sim' : 'danger'} pulse={tone === 'live'} />
       <span>{label}</span>
-      {data?.lastSegmentAt && (
-        <span className="hidden font-mono text-[12px] text-muted sm:inline">{ago(data.lastSegmentAt)}</span>
+      {data?.lastSegmentAt && !dropped && (
+        <span className="mono hidden opacity-80 sm:inline">{ago(data.lastSegmentAt)}</span>
       )}
-    </span>
+    </Chip>
   );
 }
 
 function TopBar() {
   const { patients, patient, select } = usePatient();
   const setCtx = useSetContext(patient?.id);
+  const on = patient?.contextEnabled ?? true;
   return (
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-canvas px-4 py-3 sm:px-6">
-      <div className="flex items-center gap-2">
-        <label htmlFor="patient" className="text-[14px] text-muted">
-          Patient
-        </label>
-        <select
-          id="patient"
-          value={patient?.id ?? ''}
-          onChange={(e) => select(e.target.value)}
-          className="h-9 max-w-[220px] rounded-[10px] border border-border-strong bg-canvas px-2 text-[15px] text-ink"
-        >
-          {patients.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.displayName}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Toggle
-        label="Use personal memory"
-        checked={patient?.contextEnabled ?? true}
-        onChange={(v) => setCtx.mutate(v)}
-        disabled={!patient || setCtx.isPending}
-        labelOn="Memory on"
-        labelOff="Memory off"
+    <header className="flex h-auto min-h-14 flex-wrap items-center gap-x-6 gap-y-2 border-b border-line px-4 py-2 sm:px-5">
+      <Select
+        label="Patient"
+        value={patient?.id}
+        onChange={select}
+        options={patients.map((p) => ({ value: p.id, label: p.displayName }))}
+        className="w-[min(100%,240px)]"
+        lead={(sel) => (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border border-line-strong bg-raised text-[12px] font-semibold">
+            {sel?.label?.[0] ?? '·'}
+          </span>
+        )}
       />
+      <label className="inline-flex items-center gap-2.5 text-[14px] font-medium">
+        <Switch
+          label="Use personal memory"
+          checked={on}
+          onChange={(v) => setCtx.mutate(v)}
+          disabled={!patient || setCtx.isPending}
+        />
+        <span>Memory</span>
+        <span className="mono text-[11px] text-faint">{on ? 'ON' : 'OFF'}</span>
+      </label>
       <div className="ml-auto">
         <OmiBadge userId={patient?.id} />
       </div>
@@ -111,37 +112,43 @@ function Sidebar() {
     qc.clear();
     nav('/login', { replace: true });
   }
+  const item =
+    'flex h-[34px] shrink-0 items-center gap-2.5 rounded-[8px] px-2.5 text-[14px] font-medium md:justify-center xl:justify-start';
   return (
-    <aside className="flex shrink-0 flex-col border-b border-border bg-surface md:w-56 md:border-b-0 md:border-r">
-      <Link to="/" className="px-5 py-4 font-serif text-[26px] text-ink">
-        Unsaid
+    <aside className="flex shrink-0 flex-col gap-2 border-b border-line md:w-14 md:gap-5 md:border-b-0 md:border-r md:px-2 md:py-4 xl:w-52 xl:px-3">
+      <Link to="/" aria-label="Unsaid home" className="flex h-9 items-center px-4 md:justify-center md:px-0 xl:justify-start xl:px-2">
+        <span className="wm hidden text-[18px] text-ink md:inline xl:hidden" aria-hidden="true">
+          U
+        </span>
+        <span className="md:hidden xl:inline">
+          <Wordmark size={18} />
+        </span>
       </Link>
-      <nav
-        aria-label="Console"
-        className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-1 md:flex-col md:pb-0"
-      >
+      <nav aria-label="Console" className="flex gap-0.5 overflow-x-auto px-3 pb-2 md:flex-1 md:flex-col md:overflow-visible md:px-0 md:pb-0">
         {NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
+            title={label}
             className={({ isActive }) =>
-              cn(
-                'flex h-11 shrink-0 items-center gap-2.5 rounded-[10px] px-3 text-[15px] font-medium',
-                isActive
-                  ? 'bg-canvas text-ink ring-1 ring-border'
-                  : 'text-muted hover:bg-canvas hover:text-ink',
-              )
+              cn(item, isActive ? 'bg-white/[0.07] text-ink' : 'text-muted hover:bg-white/[0.04] hover:text-ink')
             }
           >
-            <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-            {label}
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            <span className="md:sr-only xl:not-sr-only">{label}</span>
           </NavLink>
         ))}
       </nav>
-      <div className="hidden p-3 md:block">
-        <Button variant="ghost" size="sm" className="w-full justify-start text-muted" onClick={logout}>
-          <LogOut className="h-4 w-4" aria-hidden="true" /> Log out
-        </Button>
+      <div className="hidden md:block">
+        <button
+          type="button"
+          onClick={logout}
+          title="Log out"
+          className={cn(item, 'w-full text-muted hover:bg-white/[0.04] hover:text-ink')}
+        >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          <span className="md:sr-only xl:not-sr-only">Log out</span>
+        </button>
       </div>
     </aside>
   );
@@ -162,8 +169,8 @@ export function Shell() {
 
   if (me.isLoading)
     return (
-      <div className="p-6">
-        <Skeleton className="h-10 w-48" />
+      <div className="p-6" role="status" aria-label="Loading console">
+        <Skeleton className="h-9 w-48" />
         <Skeleton className="mt-6 h-64 w-full" />
       </div>
     );
@@ -183,17 +190,17 @@ export function Shell() {
   }
   return (
     <PatientProvider>
-      <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
+      <div className="grain flex min-h-screen flex-col bg-canvas md:h-screen md:flex-row">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-ink focus:px-3 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-ink focus:px-3 focus:py-2 focus:text-canvas"
         >
           Skip to content
         </a>
         <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col md:min-h-0">
           <TopBar />
-          <main id="main" className="min-w-0 flex-1 bg-canvas">
+          <main id="main" className="min-h-0 min-w-0 flex-1 md:overflow-y-auto">
             <Outlet />
           </main>
         </div>

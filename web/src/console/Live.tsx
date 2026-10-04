@@ -1,34 +1,44 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Send } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { keys, useAnswer, useSegments, useSimulateFragment } from '../api/hooks';
 import { errMessage } from '../api/client';
 import { useEventStream } from '../stream/useEventStream';
-import { usePatient } from './patient';
+import { usePatient, useStreamStatus } from './patient';
 import { initialLive, liveReducer, memoryHits, type FeedItem } from './liveState';
-import { ConversationPanel, HypothesisCards, ReasoningStepper, TranscriptFeed } from './components';
-import { Button, Fragment, StatusDot } from '../design/primitives';
+import { ConversationPanel, ReasoningTimeline, TranscriptFeed, traceTotalMs } from './components';
+import { Button, fmtMs, inputClass } from '../design/primitives';
 import { ErrorState, SkeletonList } from '../design/feedback';
+import { cn } from '../design/cn';
 
-function Column({
+export function Column({
   title,
+  meta,
   children,
+  footer,
   className = '',
 }: {
   title: string;
+  meta?: React.ReactNode;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section aria-label={title} className={`flex min-h-0 flex-col ${className}`}>
-      <h2 className="border-b border-border px-5 py-3 text-[14px] font-medium text-muted">{title}</h2>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
+    <section aria-label={title} className={cn('flex min-h-0 min-w-0 flex-col px-5', className)}>
+      <div className="flex h-[52px] shrink-0 items-center justify-between">
+        <h2 className="text-[13px] font-medium text-muted">{title}</h2>
+        {meta}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto pb-5">{children}</div>
+      {footer}
     </section>
   );
 }
 
 export function Live() {
   const { patient } = usePatient();
+  const { setStatus } = useStreamStatus();
   const qc = useQueryClient();
   const [state, dispatch] = useReducer(liveReducer, initialLive);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -40,13 +50,11 @@ export function Live() {
   const sim = useSimulateFragment();
   const answer = useAnswer();
 
-  // reset when switching patient
   useEffect(() => {
     dispatch({ type: 'reset' });
     seeded.current = undefined;
   }, [patient?.id]);
 
-  // seed the transcript once from history
   useEffect(() => {
     if (!patient || !segs.data || seeded.current === patient.id) return;
     seeded.current = patient.id;
@@ -67,18 +75,19 @@ export function Live() {
     useCallback((e) => dispatch({ type: 'event', e }), []),
     useCallback(() => qc.invalidateQueries({ queryKey: keys.segments(patient?.id) }), [qc, patient?.id]),
   );
+  useEffect(() => {
+    setStatus(streamStatus);
+    return () => setStatus('idle');
+  }, [streamStatus, setStatus]);
 
   const conf = state.conf;
 
-  // screen-reader announcements: questions and resolved sentences
   useEffect(() => {
     if (!conf) return;
-    if (conf.status === 'pending')
-      setAnnounce(`Question ${conf.index + 1} of ${conf.count}: ${conf.question}`);
+    if (conf.status === 'pending') setAnnounce(`Question ${conf.index + 1} of ${conf.count}: ${conf.question}`);
     else if (conf.status === 'resolved') setAnnounce(`Confirmed. ${conf.finalSentence}`);
     else if (conf.status === 'unresolved') setAnnounce('None of the three meanings fit. Nothing was spoken.');
-    else if (conf.status === 'expired')
-      setAnnounce('The question closed without an answer. Nothing was spoken.');
+    else if (conf.status === 'expired') setAnnounce('The question closed without an answer. Nothing was spoken.');
   }, [conf?.id, conf?.status, conf?.index, conf?.question, conf?.finalSentence]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const respond = useCallback(
@@ -89,17 +98,11 @@ export function Live() {
     [conf, answer],
   );
 
-  // Y / N keyboard shortcuts (ignored while typing)
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement;
-      if (
-        el.tagName === 'INPUT' ||
-        el.tagName === 'TEXTAREA' ||
-        el.tagName === 'SELECT' ||
-        el.isContentEditable
-      )
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
         return;
       if (e.key === 'y' || e.key === 'Y') respond('yes');
       if (e.key === 'n' || e.key === 'N') respond('no');
@@ -124,96 +127,94 @@ export function Live() {
       </div>
     );
 
+  const total = traceTotalMs(state.steps);
   const hits = memoryHits(state.steps);
+  const idle = state.steps.length === 0 && !state.thinking;
+  const form = (
+    <form onSubmit={submit} className="flex shrink-0 gap-2 pb-5 pt-3">
+      <label htmlFor="sim" className="sr-only">
+        Simulate a fragment of speech
+      </label>
+      <input
+        id="sim"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="patient says…"
+        autoComplete="off"
+        className={cn(inputClass, 'mono flex-1 text-[13px]')}
+      />
+      <Button type="submit" disabled={!text.trim() || sim.isPending} aria-label="Send fragment" className="w-9 px-0">
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Button>
+    </form>
+  );
+
   return (
-    <div className="flex h-auto flex-col lg:h-[calc(100vh-61px)]">
+    <div className="flex h-full flex-col" data-testid="live">
       <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="announcer">
         {announce}
       </div>
-      <div className="flex items-center gap-2 border-b border-border px-5 py-2 text-[14px] text-muted">
-        <StatusDot tone={streamStatus === 'open' ? 'live' : 'idle'} pulse={streamStatus === 'open'} />
-        {streamStatus === 'open'
-          ? 'Connected: events arrive as they happen'
-          : streamStatus === 'idle'
-            ? 'Not connected'
-            : 'Reconnecting to the live feed…'}
-      </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-border lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)_minmax(0,420px)] lg:divide-x lg:divide-y-0">
-        {/* Conversation first on small screens */}
-        <Column title="Conversation" className="order-first lg:order-last">
+      <div
+        className={cn(
+          'grid min-h-0 flex-1 grid-cols-1 divide-y divide-line',
+          'lg:grid-cols-[280px_minmax(0,1fr)_340px] lg:divide-x lg:divide-y-0 xl:grid-cols-[340px_minmax(0,1fr)_400px]',
+        )}
+      >
+        <Column
+          title="Conversation"
+          meta={<span className="mono text-[12px] text-faint">{state.fragment ? patient.displayName.split(' ')[0] : '—'}</span>}
+          className="order-first lg:order-last"
+        >
           {sim.isError && (
-            <ErrorState
-              title="Could not send that fragment"
-              detail={errMessage(sim.error)}
-              fix="Check the connection and try again."
-              className="mb-4"
-            />
+            <ErrorState title="Could not send that fragment" detail={errMessage(sim.error)} fix="Check the connection and try again." />
           )}
-          {answer.isError && (
-            <ErrorState
-              title="Could not send that answer"
-              detail={errMessage(answer.error)}
-              className="mb-4"
-            />
-          )}
+          {answer.isError && <ErrorState title="Could not send that answer" detail={errMessage(answer.error)} />}
           <ConversationPanel
             conf={conf}
             fragment={state.fragment}
             thinking={state.thinking}
             busy={answer.isPending}
             onAnswer={respond}
+            patientName={patient.displayName}
+            learn={state.learn}
           />
         </Column>
 
-        <Column title="Transcript" className="lg:order-first">
+        <Column
+          title="Transcript"
+          meta={<span className="mono text-[12px] text-faint">{state.feed.length} segments</span>}
+          footer={form}
+          className="lg:order-first"
+        >
           {segs.isLoading ? (
             <SkeletonList label="Loading transcript" rows={3} />
           ) : (
-            <TranscriptFeed feed={state.feed} />
+            <TranscriptFeed feed={state.feed} patientName={patient.displayName} />
           )}
         </Column>
 
-        <Column title="Reasoning">
-          <ReasoningStepper
+        <Column
+          title="Reasoning"
+          meta={
+            <span className={cn('mono text-[12px]', state.thinking ? 'text-accent' : 'text-faint')}>
+              {idle ? 'idle' : state.thinking && total === undefined ? 'running' : total !== undefined ? fmtMs(total) : ''}
+            </span>
+          }
+        >
+          <ReasoningTimeline
             steps={state.steps}
             thinking={state.thinking}
             classified={state.classified}
-            hypCount={state.hypotheses.length}
-            highlightId={highlight}
-            onHighlight={setHighlight}
-          />
-          <HypothesisCards
             hyps={state.hypotheses}
             hits={hits}
-            currentIndex={
-              conf?.status === 'pending' ? conf.index : conf?.status === 'resolved' ? conf.index : undefined
-            }
+            conf={conf}
+            learn={state.learn}
             highlightId={highlight}
             onHighlight={setHighlight}
           />
+          {idle && <p className="mt-3 text-[13px] text-faint">Steps appear here as soon as a fragment is heard.</p>}
         </Column>
       </div>
-
-      <form
-        onSubmit={submit}
-        className="flex items-center gap-2 border-t border-border bg-canvas p-3 sm:px-5"
-      >
-        <label htmlFor="sim" className="sr-only">
-          Simulate a fragment of speech
-        </label>
-        <Fragment className="hidden shrink-0 sm:inline">patient says…</Fragment>
-        <input
-          id="sim"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="water… Ramesh… bill"
-          autoComplete="off"
-          className="h-11 min-w-0 flex-1 rounded-[12px] border border-border-strong bg-canvas px-4 font-mono text-[15px] text-ink placeholder:text-muted"
-        />
-        <Button type="submit" disabled={!text.trim() || sim.isPending}>
-          <Send className="h-4 w-4" aria-hidden="true" /> Send fragment
-        </Button>
-      </form>
     </div>
   );
 }

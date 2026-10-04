@@ -2,8 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { client, errMessage, unwrap } from '../api/client';
-import { Button, Fragment, Resolved } from '../design/primitives';
-import { ErrorState } from '../design/feedback';
+import { Button, Wordmark, inputClass } from '../design/primitives';
 import { Reveal } from '../design/motion';
 
 export function Login() {
@@ -29,63 +28,55 @@ export function Login() {
     }
   }
 
-  const field =
-    'h-12 w-full rounded-[12px] border border-border-strong bg-canvas px-4 text-[16px] text-ink placeholder:text-muted';
   return (
-    <main className="grid min-h-screen place-items-center bg-surface px-4">
-      <Reveal className="w-full max-w-sm">
-        <Link to="/" className="mb-8 block font-serif text-[28px] text-ink">
-          Unsaid
+    <main className="grain relative grid min-h-screen place-items-center bg-canvas px-4">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[700px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(94,234,212,0.07),transparent)]"
+      />
+      <Reveal className="relative flex w-full max-w-[360px] flex-col items-center">
+        <Link to="/" aria-label="Unsaid home" className="mb-8">
+          <Wordmark size={28} />
         </Link>
-        <div className="rounded-[14px] border border-border bg-canvas p-6">
-          <Fragment className="block">log… in…</Fragment>
-          <Resolved size="md" as="h1" className="mb-5 mt-1">
-            Open the console
-          </Resolved>
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="mb-1.5 block text-[14px] font-medium">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={field}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="mb-1.5 block text-[14px] font-medium">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={field}
-              />
-            </div>
+        <div className="w-full rounded-[10px] border border-line-strong bg-surface p-7">
+          <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em]">Sign in</h1>
+          <p className="mb-5 mt-1.5 text-[13px] text-muted">Console for caregivers and clinicians.</p>
+          <form onSubmit={submit}>
+            <label htmlFor="email" className="mb-1.5 block text-[13px] text-muted">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+            />
+            <label htmlFor="password" className="mb-1.5 mt-4 block text-[13px] text-muted">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+            />
             {error && (
-              <ErrorState
-                title="Could not log in"
-                detail={error}
-                fix="Check the demo email and password set on the server."
-              />
+              <p role="alert" className="mt-4 rounded-[8px] border border-danger-line bg-danger-soft px-3 py-2 text-[13px] text-danger">
+                Could not log in. {error}
+              </p>
             )}
-            <Button type="submit" size="lg" className="w-full" disabled={busy}>
-              {busy ? 'Logging in…' : 'Log in'}
+            <Button type="submit" variant="primary" size="lg" className="mt-6 w-full" disabled={busy}>
+              {busy ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         </div>
-        <p className="mt-4 text-center text-[14px] text-muted">
-          Unsaid is a communication aid, not a medical device.
-        </p>
+        <p className="mt-6 text-center text-[12px] text-faint">Unsaid is a communication aid, not a medical device.</p>
       </Reveal>
     </main>
   );

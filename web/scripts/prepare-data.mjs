@@ -44,3 +44,11 @@ console.log(`prepare-data: eval <- ${path.relative(root, ev.f)} (${ev.j.timestam
 const learn = live('learn');
 fs.writeFileSync(path.join(outDir, 'learn.json'), JSON.stringify(learn ? learn.j : null, null, 2));
 console.log(`prepare-data: learn <- ${learn ? path.relative(root, learn.f) : 'none'}`);
+
+// Persona for the scripted landing demo (the seeded demo patient). Never typed into components.
+const persona = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/persona-ramesh-family.json'), 'utf8'));
+fs.writeFileSync(
+  path.join(outDir, 'persona.json'),
+  JSON.stringify({ patientName: persona.patient.name }, null, 2),
+);
+console.log(`prepare-data: persona <- ${persona.patient.name}`);

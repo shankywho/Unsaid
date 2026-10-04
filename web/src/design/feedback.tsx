@@ -1,27 +1,29 @@
 import type { ReactNode } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { cn } from './cn';
-import { Button, Fragment } from './primitives';
+import { Button } from './primitives';
 
 export const Skeleton = ({ className }: { className?: string }) => (
   <div className={cn('skeleton', className)} aria-hidden="true" />
 );
 
-/** Loading block with an accessible name; `lines` skeleton rows. */
+/** Loading rows with an accessible name. */
 export function SkeletonList({ rows = 4, label = 'Loading' }: { rows?: number; label?: string }) {
   return (
-    <div role="status" aria-label={label} className="space-y-3">
+    <div role="status" aria-label={label}>
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-14 w-full" />
+        <div key={i} className={cn('py-3.5', i > 0 && 'border-t border-line')}>
+          <Skeleton className="mb-2 h-2.5 w-14" />
+          <div className="skeleton h-3.5" style={{ width: `${[88, 70, 80, 62, 76][i % 5]}%` }} aria-hidden="true" />
+        </div>
       ))}
       <span className="sr-only">{label}</span>
     </div>
   );
 }
 
-/** An empty screen is an invitation to act: say what belongs here and offer the action. */
+/** An empty screen says what belongs here and offers the action. */
 export function EmptyState({
-  fragment,
   title,
   body,
   action,
@@ -34,16 +36,10 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-start gap-3 rounded-[14px] border border-dashed border-border-strong bg-surface p-8',
-        className,
-      )}
-    >
-      {fragment && <Fragment>{fragment}</Fragment>}
-      <h3 className="font-serif text-[28px] leading-tight text-ink">{title}</h3>
-      <p className="max-w-md text-[16px] text-muted">{body}</p>
-      {action}
+    <div className={cn('flex flex-col items-start gap-2.5 py-10', className)}>
+      <h3 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">{title}</h3>
+      <p className="max-w-md text-[14px] text-muted">{body}</p>
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
@@ -53,34 +49,29 @@ export function ErrorState({
   title = 'Could not load this',
   detail,
   fix,
+  requestId,
   onRetry,
   className,
 }: {
   title?: string;
   detail?: string;
   fix?: string;
+  requestId?: string;
   onRetry?: () => void;
   className?: string;
 }) {
   return (
-    <div
-      role="alert"
-      className={cn(
-        'flex items-start gap-3 rounded-[14px] border border-[#ecc9c5] bg-danger-soft p-5',
-        className,
+    <div role="alert" className={cn('flex flex-col items-start gap-2 py-6', className)}>
+      <AlertTriangle className="h-5 w-5 text-danger" aria-hidden="true" />
+      <p className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">{title}</p>
+      {detail && <p className="max-w-md text-[14px] text-muted">{detail}</p>}
+      {fix && <p className="max-w-md text-[14px] text-muted">{fix}</p>}
+      {requestId && <p className="mono text-[11.5px] text-faint">x-request-id {requestId}</p>}
+      {onRetry && (
+        <Button variant="secondary" size="sm" className="mt-2" onClick={onRetry}>
+          Try again
+        </Button>
       )}
-    >
-      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
-      <div className="space-y-1">
-        <p className="font-medium text-danger">{title}</p>
-        {detail && <p className="text-[15px] text-ink">{detail}</p>}
-        {fix && <p className="text-[15px] text-muted">{fix}</p>}
-        {onRetry && (
-          <Button variant="secondary" size="sm" className="mt-2" onClick={onRetry}>
-            Try again
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

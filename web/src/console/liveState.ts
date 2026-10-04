@@ -1,28 +1,27 @@
 import type { EventEnvelope, RunDetail } from '../api/client';
 
-/** Canonical order of ASSIST nodes, with the plain-language labels users see. */
+export interface Service {
+  provider: 'lyzr' | 'qdrant' | 'openai' | 'tts' | 'redis' | 'local';
+  name: string;
+}
+
+/** Canonical ASSIST DAG. The first four start together; the rest follow in order. */
+export const PARALLEL = ['classify', 'fragment_analyze', 'retrieve_raw_memory', 'retrieve_wordmap'] as const;
+export const SEQUENTIAL = ['retrieve_memory', 'hypothesize', 'compose_question', 'tts_question', 'await_confirmation'] as const;
 export const NODES = [
-  { id: 'classify', label: 'Is this a fragment?', active: 'Listening to how it was said' },
-  {
-    id: 'fragment_analyze',
-    label: 'Reading the fragment',
-    active: 'Pulling out names, actions and negation',
-  },
-  {
-    id: 'retrieve_raw_memory',
-    label: 'Searching what was overheard',
-    active: 'Searching what was overheard',
-  },
-  { id: 'retrieve_wordmap', label: 'Checking learned words', active: 'Checking this person’s own words' },
-  { id: 'retrieve_memory', label: 'Collecting related memories', active: 'Collecting related memories' },
-  { id: 'hypothesize', label: 'Weighing three meanings', active: 'Weighing three possible meanings' },
-  { id: 'compose_question', label: 'Writing the question', active: 'Writing a yes/no question' },
-  { id: 'tts_question', label: 'Preparing the voice', active: 'Preparing the voice' },
-  { id: 'await_confirmation', label: 'Waiting for an answer', active: 'Waiting for an answer' },
+  { id: 'classify', label: 'Classify', hint: 'Is this a fragment?' },
+  { id: 'fragment_analyze', label: 'Analyze fragment', hint: 'Names, actions, negation' },
+  { id: 'retrieve_raw_memory', label: 'Raw memory', hint: 'What was overheard' },
+  { id: 'retrieve_wordmap', label: 'Word map', hint: 'Learned words' },
+  { id: 'retrieve_memory', label: 'Retrieve memory', hint: 'Facts that match' },
+  { id: 'hypothesize', label: 'Hypothesize', hint: 'Ranked meanings' },
+  { id: 'compose_question', label: 'Compose question', hint: 'One yes/no question' },
+  { id: 'tts_question', label: 'Speak question', hint: 'Text to speech' },
+  { id: 'await_confirmation', label: 'Await answer', hint: 'Waiting for yes or no' },
 ] as const;
 export const NODE_IDS: string[] = NODES.map((n) => n.id);
 export const nodeLabel = (id: string): string => NODES.find((n) => n.id === id)?.label ?? id;
-export const nodeActive = (id: string): string => NODES.find((n) => n.id === id)?.active ?? id;
+export const nodeHint = (id: string): string => NODES.find((n) => n.id === id)?.hint ?? '';
 
 export interface Hit {
   id: string;
@@ -34,6 +33,9 @@ export interface StepView {
   node: string;
   status: 'running' | 'done' | 'failed' | 'skipped';
   latencyMs?: number;
+  /** ms from run start, so parallel steps share one timeline */
+  startOffsetMs?: number;
+  service?: Service;
   retrieval?: Hit[];
   preview?: string;
   error?: string;
@@ -58,6 +60,13 @@ export interface ConfView {
   finalSentence?: string;
   finalAudioUrl?: string;
   fallbackQuestion?: string;
+  askedAt?: string;
+  /** ms between the question and the answer, from the two event timestamps */
+  answeredMs?: number;
+}
+export interface LearnView {
+  status: 'queued' | 'running' | 'done';
+  summary?: string;
 }
 export type FeedItem =
   | {
@@ -79,6 +88,7 @@ export interface LiveState {
   steps: StepView[];
   hypotheses: HypView[];
   conf?: ConfView;
+  learn?: LearnView;
   startedAt?: number;
   thinking: boolean;
 }
@@ -102,6 +112,11 @@ function upsertStep(steps: StepView[], next: StepView): StepView[] {
   const copy = steps.slice();
   copy[i] = { ...copy[i], ...next };
   return copy;
+}
+
+export function toService(raw: unknown): Service | undefined {
+  const r = rec(raw);
+  return typeof r.provider === 'string' && typeof r.name === 'string' ? (r as unknown as Service) : undefined;
 }
 
 export function toHits(raw: unknown): Hit[] | undefined {
@@ -179,6 +194,9 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
       };
     }
     case 'run.started':
+      if (d.pipeline === 'LEARN') {
+        return s.learn?.status === 'queued' ? { ...s, learn: { status: 'running' } } : s;
+      }
       if (d.pipeline !== 'ASSIST') return s;
       return {
         ...s,
@@ -186,6 +204,7 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
         steps: [],
         hypotheses: [],
         conf: undefined,
+        learn: undefined,
         classified: undefined,
         thinking: true,
         startedAt: Date.now(),
@@ -211,6 +230,7 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
       const pairs = [...subs, ...aliases].map((x) => `“${str(x.said)}” means “${str(x.meant)}”`);
       return {
         ...s,
+        learn: s.learn ? { status: 'done', summary: str(d.summary) || undefined } : s.learn,
         feed: [
           ...s.feed,
           {
@@ -231,7 +251,15 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
   if (!e.runId || !s.runId || e.runId !== s.runId) return s;
   switch (e.type) {
     case 'step.started':
-      return { ...s, steps: upsertStep(s.steps, { node: str(d.node), status: 'running' }) };
+      return {
+        ...s,
+        steps: upsertStep(s.steps, {
+          node: str(d.node),
+          status: 'running',
+          startOffsetMs: num(d.startOffsetMs),
+          service: toService(d.service),
+        }),
+      };
     case 'step.completed':
     case 'step.failed': {
       const status = e.type === 'step.failed' ? 'failed' : d.status === 'SKIPPED' ? 'skipped' : 'done';
@@ -241,6 +269,8 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
           node: str(d.node),
           status,
           latencyMs: num(d.latencyMs),
+          startOffsetMs: num(d.startOffsetMs),
+          service: toService(d.service),
           retrieval: toHits(d.retrieval),
           preview: str(d.outputPreview) || undefined,
           error: str(d.error) || undefined,
@@ -274,6 +304,7 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
           index: num(d.currentIndex) ?? 0,
           count: num(d.hypothesesCount) ?? 3,
           status: 'pending',
+          askedAt: e.ts,
         },
       };
     case 'assist.resolved':
@@ -285,7 +316,9 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
           status: 'resolved',
           finalSentence: str(d.finalSentence),
           finalAudioUrl: str(d.audioUrl) || undefined,
+          answeredMs: s.conf.askedAt ? Math.max(0, Date.parse(e.ts) - Date.parse(s.conf.askedAt)) : undefined,
         },
+        learn: { status: 'queued' },
       };
     case 'assist.unresolved':
       return {
@@ -309,7 +342,7 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
 
 /* ---------- derived helpers ---------- */
 
-export type SpeechAct = 'Asking' | 'Requesting' | 'Stating';
+export type SpeechAct = 'ask' | 'request' | 'inform';
 /** Client-side label: the API does not return a speech act per hypothesis, so we read it off the sentence. */
 export function speechAct(sentence: string): SpeechAct {
   const t = sentence.trim();
@@ -317,9 +350,9 @@ export function speechAct(sentence: string): SpeechAct {
     t.endsWith('?') ||
     /^(did|does|do|is|are|was|were|when|where|what|who|how|can|could|will|would)\b/i.test(t)
   )
-    return 'Asking';
-  if (/^(please|remind|tell|ask|bring|call|turn|give|help|check|let)\b/i.test(t)) return 'Requesting';
-  return 'Stating';
+    return 'ask';
+  if (/^(please|remind|tell|ask|bring|call|turn|give|help|check|let)\b/i.test(t)) return 'request';
+  return 'inform';
 }
 
 /** Steps in canonical order; unknown nodes last. */
@@ -348,6 +381,8 @@ export function fromRun(run: RunDetail): { steps: StepView[]; hypotheses: HypVie
             ? 'running'
             : 'done',
     latencyMs: st.latencyMs ?? undefined,
+    startOffsetMs: st.startOffsetMs,
+    service: st.service,
     retrieval: toHits(st.retrieval),
     error: st.error ?? undefined,
   }));
