@@ -27,9 +27,12 @@ Classification rules:
    - "FLUENT": clear, complete, grammatical speech without aphasic fragmentation (e.g. "I am going to sleep now").
    - "NOISE": coughs, background laughter, filler noises, or unparseable audio artifacts.
 
-Output JSON format ONLY (no markdown fences, no explanatory text):
+Output JSON format ONLY (valid JSON object, no markdown fences):
 {
-"kind": "FRAGMENT" | "FLUENT" | "CONFIRMATION_REPLY" | "NOISE",
-"confirmationAnswer": "yes" | "no" | null,
-"reason": "<short explanation>"
+"kind": "FRAGMENT",
+"confirmationAnswer": null,
+"reason": "Telegraphic speech containing pauses and isolated nouns attempting to communicate a request or thought."
 }
+
+Where "kind" must be one of: "FRAGMENT", "FLUENT", "CONFIRMATION_REPLY", or "NOISE".
+Where "confirmationAnswer" must be "yes", "no", or null.

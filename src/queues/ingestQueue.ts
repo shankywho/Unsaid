@@ -34,7 +34,7 @@ export async function bufferSegment(
     await ingestQueue.add(
       'flush',
       { userId, sessionId },
-      { jobId: `flush:${userId}:${sessionId}:${Date.now()}` },
+      { jobId: `flush_${userId}_${sessionId}_${Date.now()}` },
     );
     return { count, flushed: true };
   } else {
@@ -42,7 +42,7 @@ export async function bufferSegment(
     await ingestQueue.add(
       'flush',
       { userId, sessionId },
-      { delay: env.INGEST_IDLE_SEC * 1000, jobId: `idle:${userId}:${sessionId}` },
+      { delay: env.INGEST_IDLE_SEC * 1000, jobId: `idle_${userId}_${sessionId}` },
     );
     return { count, flushed: false };
   }

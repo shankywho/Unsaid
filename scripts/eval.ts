@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { prisma } from '../src/db';
-import { bootstrapQdrant } from '../src/adapters/qdrant/collections';
+import { bootstrapQdrant, collections } from '../src/adapters/qdrant/collections';
+import { qdrant } from '../src/adapters/qdrant/client';
 import { runIngestPipeline } from '../src/orchestrator/ingestPipeline';
 import { runAssistPipeline } from '../src/orchestrator/assistPipeline';
 import { runAgent } from '../src/agents/runAgent';
@@ -55,23 +57,56 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
     },
   });
 
-  console.log('Seeding ambient knowledge for both users...');
-  for (const u of [userOn, userOff]) {
+  console.log('Setting up ambient memory for userOn...');
+  const demoUser = await prisma.user.findFirst({
+    where: { displayName: 'Mohan Lal Sharma' },
+  });
+
+  let clonedFromDemo = false;
+  if (demoUser) {
+    const scrollRes = await qdrant.scroll(collections.memory, {
+      filter: {
+        must: [{ key: 'userId', match: { value: demoUser.id } }],
+      },
+      limit: 100,
+      with_payload: true,
+      with_vector: true,
+    });
+    if (scrollRes.points.length > 0) {
+      const pointsToInsert = scrollRes.points.map((pt) => ({
+        id: randomUUID(),
+        vector: pt.vector as number[],
+        payload: {
+          ...(pt.payload as any),
+          userId: userOn.id,
+        },
+      }));
+      await qdrant.upsert(collections.memory, { points: pointsToInsert });
+      console.log(`✓ Cloned ${pointsToInsert.length} memory facts from demo persona into eval userOn.`);
+      clonedFromDemo = true;
+    }
+  }
+
+  if (!clonedFromDemo) {
     for (let i = 0; i < ambientSegments.length; i += 6) {
       const chunk = ambientSegments.slice(i, i + 6);
       await runIngestPipeline({
-        userId: u.id,
-        sessionId: `seed_eval_${u.id}`,
+        userId: userOn.id,
+        sessionId: `seed_eval_${userOn.id}`,
         segments: chunk.map((s: any, idx: number) => ({
-          id: `eval_seed_${u.id}_${i + idx}`,
+          id: `eval_seed_${userOn.id}_${i + idx}`,
           text: s.text,
           speaker: s.speaker,
         })),
       });
     }
-    // Baseline substitution
-    await upsertSubstitution(u.id, 'car', 'walk');
   }
+
+  // Baseline substitutions
+  await upsertSubstitution(userOn.id, 'car', 'walk', 'SUBSTITUTION');
+  await upsertSubstitution(userOn.id, 'Pri', 'Priya', 'NAME_ALIAS');
+  await upsertSubstitution(userOff.id, 'car', 'walk', 'SUBSTITUTION');
+  await upsertSubstitution(userOff.id, 'Pri', 'Priya', 'NAME_ALIAS');
   console.log('✓ Seeding complete. Evaluating test set of', fragments.length, 'fragments...\n');
 
   async function evaluateMode(user: any, modeName: string): Promise<ModeResult> {
@@ -82,6 +117,10 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
 
     for (let i = 0; i < fragments.length; i++) {
       const item = fragments[i];
+      await prisma.confirmation.updateMany({
+        where: { userId: user.id, status: 'PENDING' },
+        data: { status: 'EXPIRED' },
+      });
       const t0 = Date.now();
 
       const assistRes = await runAssistPipeline({
@@ -144,9 +183,9 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
           if (matchedTop3) top3Hits++;
         }
       }
-      process.stdout.write('.');
+      console.log(`  [${i + 1}/${fragments.length}] "${item.fragment}" (${latency}ms)`);
     }
-    console.log(` Done.`);
+    console.log(`\n✓ [${modeName}] complete.`);
 
     const total = fragments.length;
     return {

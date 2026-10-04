@@ -8,15 +8,23 @@ export const UtteranceClassifierOutputSchema = z.object({
 export type UtteranceClassifierOutput = z.infer<typeof UtteranceClassifierOutputSchema>;
 
 export const FragmentAnalystOutputSchema = z.object({
-  keywords: z.array(z.string()),
-  entities: z.array(
-    z.object({
-      text: z.string(),
-      type: z.string(),
-    }),
-  ),
-  speechActGuess: z.enum(['request', 'question', 'statement', 'refusal', 'need', 'emotion']).or(z.string()),
-  negation: z.boolean(),
+  keywords: z.array(z.string()).default([]),
+  entities: z
+    .array(
+      z.union([
+        z.object({
+          text: z.string(),
+          type: z.string(),
+        }),
+        z.string().transform((s) => ({ text: s, type: 'entity' })),
+      ]),
+    )
+    .default([]),
+  speechActGuess: z
+    .enum(['request', 'question', 'statement', 'refusal', 'need', 'emotion'])
+    .or(z.string())
+    .default('statement'),
+  negation: z.boolean().default(false),
   possibleSubstitutions: z
     .array(
       z.object({
@@ -25,7 +33,7 @@ export const FragmentAnalystOutputSchema = z.object({
       }),
     )
     .default([]),
-  retrievalQueries: z.array(z.string()),
+  retrievalQueries: z.array(z.string()).default([]),
 });
 export type FragmentAnalystOutput = z.infer<typeof FragmentAnalystOutputSchema>;
 

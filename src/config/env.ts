@@ -31,6 +31,10 @@ const schema = z.object({
   LYZR_AGENT_UTTERANCE_CLASSIFIER_ID: z.string().default(''),
   LYZR_AGENT_EVAL_JUDGE_ID: z.string().default(''),
 
+  GROQ_API_KEY: z.string().default(''),
+  GROQ_MODEL: z.string().default('openai/gpt-oss-20b'),
+  LLM_PROVIDER: z.enum(['lyzr', 'groq', 'mock']).default('groq'),
+
   OPENAI_API_KEY: z.string().default(''),
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
   EMBEDDING_DIM: z.coerce.number().int().positive().default(1536),
