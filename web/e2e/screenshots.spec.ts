@@ -33,13 +33,13 @@ async function compare(
   await p.waitForTimeout(1200); // web fonts
   const designPath = path.join(cmp, `${name}-design.png`);
   await p.screenshot({ path: designPath, fullPage });
-  fs.copyFileSync(built, path.join(cmp, `${name}-built.png`));
   const img = (f: string) => `data:image/png;base64,${fs.readFileSync(f).toString('base64')}`;
   await p.setViewportSize({ width: width * 2 + 48, height: 900 });
   await p.setContent(`<body style="margin:0;background:#050506;color:#8b8b93;font:12px monospace;display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:12px 12px">
     <figure style="margin:0"><figcaption style="padding:6px 0">design-ref/${board}</figcaption><img style="width:100%;display:block" src="${img(designPath)}"></figure>
     <figure style="margin:0"><figcaption style="padding:6px 0">built</figcaption><img style="width:100%;display:block" src="${img(built)}"></figure></body>`);
   await p.screenshot({ path: path.join(cmp, `${name}.png`), fullPage: true });
+  fs.rmSync(designPath); // only the side-by-side image is kept
   await p.close();
 }
 
