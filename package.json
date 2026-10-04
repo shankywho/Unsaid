@@ -14,6 +14,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "seed": "tsx scripts/seed.ts",
+    "demo:reset": "tsx scripts/demo-reset.ts",
     "eval": "tsx scripts/eval.ts",
     "eval:learn": "tsx scripts/eval-learn.ts",
     "replay:omi": "tsx scripts/replay-omi.ts",

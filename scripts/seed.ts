@@ -4,6 +4,7 @@ import { prisma } from '../src/db';
 import { bootstrapQdrant } from '../src/adapters/qdrant/collections';
 import { runIngestPipeline } from '../src/orchestrator/ingestPipeline';
 import { upsertSubstitution } from '../src/memory/wordMap';
+import { recordSegment } from '../src/ingest/recordSegment';
 
 export async function seed(): Promise<string> {
   console.log('Seeding Unsaid demo persona & ambient memory...');
@@ -58,6 +59,21 @@ export async function seed(): Promise<string> {
   console.log(
     `Ingested ${ambientSegments.length} ambient segments -> ${totalFacts} memory facts stored in Qdrant.`,
   );
+
+  // Show the latest household conversation in the Live transcript (the earlier days stay as memory only)
+  const recent = ambientSegments.slice(-6);
+  for (const [i, seg] of recent.entries()) {
+    await recordSegment({
+      userId: user.id,
+      sessionId: 'seed_recent_conversation',
+      text: seg.text,
+      speaker: seg.speaker,
+      isUser: false,
+      start: i,
+      end: i + 1,
+      source: 'OMI_MEMORY',
+    });
+  }
 
   // Seed baseline word-map substitutions
   await upsertSubstitution(user.id, 'car', 'walk', 'SUBSTITUTION');

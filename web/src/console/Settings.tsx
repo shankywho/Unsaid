@@ -81,9 +81,6 @@ export function Settings() {
               Last 5 minutes: {omi.data.segmentsLast5Min.OMI_REALTIME} from Omi,{' '}
               {omi.data.segmentsLast5Min.SIMULATED} simulated.
             </p>
-            <p className="text-muted">
-              Webhook secret {omi.data.webhookSecretConfigured ? 'is set.' : 'is not set (development only).'}
-            </p>
           </div>
         ) : (
           <ErrorState title="Omi status unavailable" detail={omi.error ? errMessage(omi.error) : undefined} />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useRun, useRuns } from '../api/hooks';
@@ -22,11 +23,28 @@ const statusLabel = (s: string) =>
 export function Runs() {
   const { patient } = usePatient();
   const runs = useRuns(patient?.id);
+  const [kind, setKind] = useState<'ASSIST' | 'INGEST' | 'LEARN' | 'ALL'>('ASSIST');
+  const shown = runs.data?.filter((r) => kind === 'ALL' || r.pipeline === kind);
   return (
     <div className="mx-auto max-w-[1100px] px-5 pb-12 sm:px-10">
       <PageHeader
         title="Runs"
         sub="Each fragment, memory update and learning pass leaves a full trace you can open."
+        right={
+          <div className="flex gap-1.5" role="group" aria-label="Filter runs">
+            {(['ASSIST', 'LEARN', 'INGEST', 'ALL'] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={kind === k}
+                onClick={() => setKind(k)}
+                className={`h-7 rounded-[6px] border px-2.5 text-[12px] font-medium ${kind === k ? 'border-line-strong bg-white/[0.07] text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              >
+                {k === 'ALL' ? 'All' : k[0] + k.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        }
       />
       {runs.isLoading && <SkeletonList label="Loading runs" />}
       {runs.isError && (
@@ -36,7 +54,7 @@ export function Runs() {
           onRetry={() => runs.refetch()}
         />
       )}
-      {runs.isSuccess && runs.data.length === 0 && (
+      {runs.isSuccess && (shown?.length ?? 0) === 0 && (
         <EmptyState
           title="No runs yet"
           body="Send a fragment from the Live screen and its trace will appear here."
@@ -48,7 +66,7 @@ export function Runs() {
         />
       )}
       <ul className="overflow-hidden rounded-[10px] border border-line-strong empty:hidden">
-        {runs.data?.map((r) => {
+        {shown?.map((r) => {
           const input = (r.input ?? {}) as Record<string, unknown>;
           const label =
             typeof input.text === 'string'

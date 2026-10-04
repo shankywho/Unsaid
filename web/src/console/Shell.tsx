@@ -31,9 +31,10 @@ function ago(iso: string | null | undefined): string {
 export function OmiBadge({ userId }: { userId?: string }) {
   const { data, isError } = useOmiStatus(userId);
   const { status } = useStreamStatus();
-  let tone: 'live' | 'sim' | 'off' = 'off';
-  let label = 'Omi offline';
+  let tone: 'live' | 'sim' | 'idle' | 'off' = 'idle';
+  let label = 'Waiting for Omi';
   if (isError) {
+    tone = 'off';
     label = 'Omi status unavailable';
   } else if (data) {
     const c = data.segmentsLast5Min;

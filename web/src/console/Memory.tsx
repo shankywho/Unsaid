@@ -164,7 +164,7 @@ export function Memory() {
                     )}
                   </div>
                   <Mono className="hidden sm:block">
-                    {src ? (SOURCE_LABEL[src.source] ?? src.source) : 'older'}
+                    {src ? (SOURCE_LABEL[src.source] ?? src.source) : '—'}
                   </Mono>
                   <Mono className="hidden sm:block">{fmtTime(src?.createdAt ?? f.createdAt)}</Mono>
                   <Button
