@@ -45,9 +45,10 @@ export async function runAgent<T>(
     return schema.parse(parsed);
   } catch (err: any) {
     logger.warn(
-      { agent, error: err.message, rawSnippet: raw.slice(0, 150) },
+      { agent, error: err.message },
       'Agent response failed JSON/schema validation. Retrying with repair prompt.',
     );
+    logger.debug({ agent, rawSnippet: raw.slice(0, 150) }, 'Invalid agent response snippet');
 
     const repairMessage =
       `Your previous response was not valid JSON or failed the schema: ${err.message}.\n` +
@@ -65,13 +66,14 @@ export async function runAgent<T>(
       const parsedRepaired = JSON.parse(cleanedRepaired);
       return schema.parse(parsedRepaired);
     } catch (secondErr: any) {
-      logger.error(
-        { agent, error: secondErr.message, repairedRawSnippet: repairedRaw.slice(0, 150) },
-        'Agent repair retry failed.',
+      logger.error({ agent, error: secondErr.message }, 'Agent repair retry failed.');
+      logger.debug(
+        { agent, repairedRawSnippet: repairedRaw.slice(0, 150) },
+        'Invalid repaired agent response snippet',
       );
       throw new AppError(
         502,
-        'AGENT_PARSE_ERROR',
+        'agent_parse_error',
         `Agent ${agent} failed to return valid schema JSON after repair retry: ${secondErr.message}`,
       );
     }

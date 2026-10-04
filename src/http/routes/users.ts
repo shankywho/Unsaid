@@ -1,29 +1,15 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { prisma } from '../../db';
 import { qdrant } from '../../adapters/qdrant/client';
 import { collections } from '../../adapters/qdrant/collections';
+import { notFound } from '../../lib/errors';
+import { CreateUserBody, IdParams, UpdateUserBody } from '../schemas';
 
 export const usersRouter = Router();
 
-const createUserSchema = z.object({
-  displayName: z.string().min(1),
-  omiUid: z.string().optional(),
-  caregiverName: z.string().optional(),
-  contextEnabled: z.boolean().optional(),
-  assistMode: z.enum(['AUTO', 'ON', 'OFF']).optional(),
-});
-
-const updateUserSchema = z.object({
-  displayName: z.string().optional(),
-  caregiverName: z.string().optional(),
-  contextEnabled: z.boolean().optional(),
-  assistMode: z.enum(['AUTO', 'ON', 'OFF']).optional(),
-});
-
 usersRouter.post('/users', async (req, res, next) => {
   try {
-    const body = createUserSchema.parse(req.body);
+    const body = CreateUserBody.parse(req.body);
     const user = await prisma.user.create({
       data: body,
     });
@@ -35,7 +21,7 @@ usersRouter.post('/users', async (req, res, next) => {
 
 usersRouter.get('/users/:id', async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = IdParams.parse(req.params);
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
@@ -45,9 +31,7 @@ usersRouter.get('/users/:id', async (req, res, next) => {
       },
     });
 
-    if (!user) {
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
-    }
+    if (!user) throw notFound('User');
 
     return res.status(200).json({ ok: true, data: user });
   } catch (err) {
@@ -57,12 +41,9 @@ usersRouter.get('/users/:id', async (req, res, next) => {
 
 usersRouter.patch('/users/:id', async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const body = updateUserSchema.parse(req.body);
-    const user = await prisma.user.update({
-      where: { id },
-      data: body,
-    });
+    const { id } = IdParams.parse(req.params);
+    const body = UpdateUserBody.parse(req.body);
+    const user = await prisma.user.update({ where: { id }, data: body }); // P2025 -> 404 in errorHandler
     return res.status(200).json({ ok: true, data: user });
   } catch (err) {
     return next(err);
@@ -71,7 +52,7 @@ usersRouter.patch('/users/:id', async (req, res, next) => {
 
 usersRouter.get('/users/:id/wordmap', async (req, res, next) => {
   try {
-    const { id: userId } = req.params;
+    const { id: userId } = IdParams.parse(req.params);
 
     // Fetch entries from relational DB
     const entries = await prisma.wordMapEntry.findMany({
@@ -115,11 +96,9 @@ usersRouter.get('/users/:id/wordmap', async (req, res, next) => {
 
 usersRouter.get('/users/:id/insights', async (req, res, next) => {
   try {
-    const { id: userId } = req.params;
+    const { id: userId } = IdParams.parse(req.params);
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
-    }
+    if (!user) throw notFound('User');
 
     const [fragmentsCount, totalConfirmations, confirmedCount, firstTryCount, topSubstitutions] =
       await Promise.all([

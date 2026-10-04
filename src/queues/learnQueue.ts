@@ -40,5 +40,14 @@ export function createLearnWorker(): Worker<LearnJobData> {
     logger.error({ jobId: job?.id, err: err.message }, 'Learn job failed');
   });
 
+  worker.once('closed', () => {
+    void workerConn.quit().catch(() => undefined);
+  });
+
   return worker;
+}
+
+export async function closeLearnQueue(): Promise<void> {
+  await learnQueue.close();
+  await queueConn.quit().catch(() => undefined);
 }

@@ -17,6 +17,7 @@ import {
   createPendingConfirmation,
 } from '../confirmations/service';
 import { adapters } from '../adapters';
+import { bus } from '../tracing/events';
 import { logger } from '../lib/logger';
 
 export interface AssistPipelineInput {
@@ -59,12 +60,15 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
   // Pre-filter for quick local classification
   if (pendingConf) {
     if (AFFIRMATIVE_REGEX.test(trimmed)) {
-      logger.info({ userId, text: trimmed }, 'Local regex classified as affirmative confirmation');
+      logger.info(
+        { userId, textLength: trimmed.length },
+        'Local regex classified as affirmative confirmation',
+      );
       await answerConfirmation(pendingConf.id, 'yes');
       return { confirmationId: pendingConf.id, resolved: true, handledAsReply: true };
     }
     if (NEGATIVE_REGEX.test(trimmed)) {
-      logger.info({ userId, text: trimmed }, 'Local regex classified as negative confirmation');
+      logger.info({ userId, textLength: trimmed.length }, 'Local regex classified as negative confirmation');
       await answerConfirmation(pendingConf.id, 'no');
       return { confirmationId: pendingConf.id, resolved: false, handledAsReply: true };
     }
@@ -86,6 +90,12 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
         input: () => ({ text, hasPending: Boolean(pendingConf) }),
         run: async () => {
           if (user.assistMode === 'ON') {
+            bus.publish(
+              'segment.classified',
+              userId,
+              { kind: 'FRAGMENT', reason: 'assistMode ON forces fragment handling', source: 'mode_override' },
+              runId,
+            );
             return {
               output: { kind: 'FRAGMENT', confirmationAnswer: null },
               agentId: 'mode_override',
@@ -101,6 +111,12 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
               hasPendingConfirmation: Boolean(pendingConf),
             },
             { userId, sessionId, runId, node: 'classify' },
+          );
+          bus.publish(
+            'segment.classified',
+            userId,
+            { kind: res.kind, reason: res.reason, source: 'agent' },
+            runId,
           );
           return {
             output: res,
@@ -234,12 +250,14 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
           const substitutions = wordMapHits
             .filter((h) => h.said && h.meant)
             .map((h) => ({ said: h.said!, meant: h.meant! }));
-          const normalizedFragment = substitutions.length > 0 ? applySubstitutions(text, substitutions) : text;
+          const normalizedFragment =
+            substitutions.length > 0 ? applySubstitutions(text, substitutions) : text;
 
           const payload = {
             fragment: text,
             normalizedFragment,
-            substitutionsRule: 'A substitution means REPLACE the said word with the meant word. NEVER combine both together.',
+            substitutionsRule:
+              'A substitution means REPLACE the said word with the meant word. NEVER combine both together.',
             analyst,
             memoryFacts: memoryHits.map((h) => ({
               id: h.id,
@@ -330,6 +348,22 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
             });
           }
 
+          bus.publish(
+            'hypotheses.generated',
+            userId,
+            {
+              normalizedFragment,
+              hypotheses: sanitizedHypotheses.map((h, rank) => ({
+                rank,
+                intent: h.intent,
+                sentence: h.sentence,
+                question: h.speaker_perspective_question,
+                confidence: h.confidence,
+                evidenceIds: h.evidenceIds,
+              })),
+            },
+            runId,
+          );
           return {
             output: sanitizedHypotheses,
             agentId: adapters().lyzr.agentId('intent_hypothesizer'),

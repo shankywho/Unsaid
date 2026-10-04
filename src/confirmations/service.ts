@@ -7,6 +7,7 @@ import { logger } from '../lib/logger';
 import { runAgent } from '../agents/runAgent';
 import { ConfirmationComposerOutputSchema, type HypothesisItem } from '../agents/schemas';
 import { enqueueLearnJob } from '../queues/learnQueue';
+import { notFound } from '../lib/errors';
 
 export const pendingKey = (userId: string): string => `confirm:pending:${userId}`;
 
@@ -73,6 +74,7 @@ export async function createPendingConfirmation(params: {
       audioUrl: questionAudio ? `/v1/audio/${questionAudio}` : undefined,
       currentIndex: 0,
       hypothesesCount: hypotheses.length,
+      hypotheses: hypotheses.map((h) => ({ intent: h.intent, sentence: h.sentence })),
     },
     runId,
   );
@@ -91,13 +93,18 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
     include: { user: true },
   });
 
-  if (!conf) throw new Error(`Confirmation ${confirmationId} not found`);
+  if (!conf) throw notFound('Confirmation');
   if (conf.status !== 'PENDING') {
     return { confirmation: conf, resolved: conf.status === 'CONFIRMED' };
   }
 
   const hypotheses = (conf.hypotheses as unknown as HypothesisItem[]) || [];
-  bus.publish('confirmation.answered', conf.userId, { confirmationId, answer }, conf.runId);
+  bus.publish(
+    'confirmation.answered',
+    conf.userId,
+    { confirmationId, answer, answeredIndex: conf.currentIndex },
+    conf.runId,
+  );
 
   if (answer === 'yes') {
     const confirmedIdx = conf.currentIndex;
@@ -112,8 +119,9 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
       logger.warn({ err: err.message }, 'Failed to synthesize final speech audio');
     }
 
-    const updated = await prisma.confirmation.update({
-      where: { id: confirmationId },
+    // Atomic claim: concurrent duplicate "yes" answers must resolve (and enqueue learning) exactly once.
+    const claimed = await prisma.confirmation.updateMany({
+      where: { id: confirmationId, status: 'PENDING' },
       data: {
         status: 'CONFIRMED',
         confirmedIdx,
@@ -122,6 +130,8 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
         resolvedAt: new Date(),
       },
     });
+    const updated = await prisma.confirmation.findUniqueOrThrow({ where: { id: confirmationId } });
+    if (claimed.count === 0) return { confirmation: updated, resolved: updated.status === 'CONFIRMED' };
 
     await redis.del(pendingKey(conf.userId));
 

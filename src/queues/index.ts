@@ -1,9 +1,10 @@
-import { createIngestWorker } from './ingestQueue';
-import { createLearnWorker } from './learnQueue';
-import { createCleanupWorker, scheduleDailyCleanup } from './cleanupQueue';
+import { createIngestWorker, closeIngestQueue } from './ingestQueue';
+import { createLearnWorker, closeLearnQueue } from './learnQueue';
+import { createCleanupWorker, scheduleDailyCleanup, closeCleanupQueue } from './cleanupQueue';
 import { logger } from '../lib/logger';
 
 export interface WorkersHandle {
+  /** Stop taking jobs, wait for in-flight ones, then close queues and their Redis connections. */
   stop(): Promise<void>;
 }
 
@@ -20,8 +21,10 @@ export function startWorkers(): WorkersHandle {
 
   return {
     async stop() {
+      // worker.close() waits for active jobs to finish
       await Promise.all([ingestWorker.close(), learnWorker.close(), cleanupWorker.close()]);
-      logger.info('BullMQ workers stopped');
+      await Promise.all([closeIngestQueue(), closeLearnQueue(), closeCleanupQueue()]);
+      logger.info('BullMQ workers and queues stopped');
     },
   };
 }

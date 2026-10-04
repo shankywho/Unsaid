@@ -50,6 +50,21 @@ const schema = z.object({
   INGEST_WINDOW_SIZE: z.coerce.number().int().positive().default(6),
   INGEST_IDLE_SEC: z.coerce.number().int().positive().default(30),
   AUDIO_DIR: z.string().default('./storage/audio'),
+
+  // --- HTTP hardening / auth ---
+  CORS_ORIGINS: z.string().default(''), // comma-separated allowlist, e.g. https://app.example.com
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0), // number of reverse-proxy hops
+  BODY_LIMIT_KB: z.coerce.number().int().positive().default(256),
+  RATE_LIMIT_ENABLED: bool.default(true),
+  RATE_LIMIT_V1_PER_MIN: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_WEBHOOK_PER_MIN: z.coerce.number().int().positive().default(300),
+  RATE_LIMIT_LOGIN_PER_15MIN: z.coerce.number().int().positive().default(10),
+  DEMO_EMAIL: z.string().default(''),
+  DEMO_PASSWORD: z.string().default(''),
+  SESSION_SECRET: z.string().default(''),
+  SESSION_TTL_HOURS: z.coerce.number().int().positive().default(24),
+  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  ENABLE_DOCS: bool, // force /docs on in production
 });
 
 export type Env = z.infer<typeof schema>;
@@ -60,7 +75,16 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     const msg = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Invalid environment: ${msg}`);
   }
-  return parsed.data;
+  const e = parsed.data;
+  if (e.NODE_ENV === 'production') {
+    const problems: string[] = [];
+    if (e.API_KEY === 'dev-key' || e.API_KEY.length < 16)
+      problems.push('API_KEY must be set to a strong value (>=16 chars)');
+    if (e.OMI_WEBHOOK_SECRET.length < 16) problems.push('OMI_WEBHOOK_SECRET must be set (>=16 chars)');
+    if (e.SESSION_SECRET.length < 32) problems.push('SESSION_SECRET must be >=32 chars');
+    if (problems.length) throw new Error(`Invalid production environment: ${problems.join('; ')}`);
+  }
+  return e;
 }
 
 export const env: Env = loadEnv();

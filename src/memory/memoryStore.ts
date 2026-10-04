@@ -122,7 +122,11 @@ export async function upsertMemoryFact(
       ],
     });
 
-    logger.info({ userId, pointId, text: mergedPayload.text }, 'Merged existing memory fact');
+    logger.info(
+      { userId, pointId, textLength: String(mergedPayload.text ?? '').length },
+      'Merged existing memory fact',
+    );
+    logger.debug({ pointId, text: mergedPayload.text }, 'Merged fact text');
     return { id: pointId, merged: true, payload: mergedPayload };
   }
 
@@ -155,7 +159,11 @@ export async function upsertMemoryFact(
     ],
   });
 
-  logger.info({ userId, pointId, text: newPayload.text }, 'Inserted new memory fact');
+  logger.info(
+    { userId, pointId, textLength: String(newPayload.text ?? '').length },
+    'Inserted new memory fact',
+  );
+  logger.debug({ pointId, text: newPayload.text }, 'Inserted fact text');
   return { id: pointId, merged: false, payload: newPayload };
 }
 

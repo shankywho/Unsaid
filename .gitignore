@@ -7,3 +7,5 @@ eval-results/*
 !eval-results/human-check.md
 *.log
 .DS_Store
+
+.env.prod

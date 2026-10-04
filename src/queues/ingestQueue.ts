@@ -75,5 +75,14 @@ export function createIngestWorker(): Worker<IngestJobData> {
     logger.error({ jobId: job?.id, err: err.message }, 'Ingest job failed');
   });
 
+  worker.once('closed', () => {
+    void workerConn.quit().catch(() => undefined);
+  });
+
   return worker;
+}
+
+export async function closeIngestQueue(): Promise<void> {
+  await ingestQueue.close();
+  await queueConn.quit().catch(() => undefined);
 }

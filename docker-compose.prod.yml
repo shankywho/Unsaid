@@ -1,0 +1,65 @@
+# Self-hosted production-like stack: API + Postgres + Redis + Qdrant, no host ports except the API.
+# Usage:  cp .env.prod.example .env.prod  (fill in)  &&  docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# For managed services (Neon / Upstash / Qdrant Cloud) deploy only the `api` + `migrate` services; see docs/DEPLOY.md.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: unsaid
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: unsaid
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U unsaid']
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-}
+    volumes: [qdrantdata:/qdrant/storage]
+
+  migrate:
+    build: .
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgresql://unsaid:${POSTGRES_PASSWORD}@postgres:5432/unsaid
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: 'no'
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports: ['${PORT:-8080}:8080']
+    env_file: .env.prod
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://unsaid:${POSTGRES_PASSWORD}@postgres:5432/unsaid
+      REDIS_URL: redis://redis:6379
+      QDRANT_URL: http://qdrant:6333
+    volumes: [audio:/data/audio]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      qdrant: { condition: service_started }
+    stop_grace_period: 30s # > the 25s graceful-shutdown deadline
+
+volumes:
+  pgdata:
+  redisdata:
+  qdrantdata:
+  audio:

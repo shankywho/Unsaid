@@ -6,6 +6,7 @@ import { createRedis, redis } from '../redis';
 export const EVENT_TYPES = [
   'segment.received',
   'segment.classified',
+  'hypotheses.generated',
   'run.started',
   'step.started',
   'step.completed',

@@ -3,8 +3,7 @@ import { createApp } from './http/app';
 import { bootstrapQdrant } from './adapters/qdrant/collections';
 import { startWorkers } from './queues';
 import { logger } from './lib/logger';
-import { prisma } from './db';
-import { redis } from './redis';
+import { createShutdown } from './lifecycle';
 
 async function main(): Promise<void> {
   logger.info({ nodeEnv: env.NODE_ENV, mock: env.MOCK_EXTERNALS }, 'Booting Unsaid backend...');
@@ -24,17 +23,9 @@ async function main(): Promise<void> {
     );
   });
 
-  const shutdown = async (signal: string) => {
-    logger.info({ signal }, 'Shutting down gracefully...');
-    server.close();
-    await workers.stop();
-    await prisma.$disconnect();
-    redis.disconnect();
-    process.exit(0);
-  };
-
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  const shutdown = createShutdown({ server, workers });
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
 main().catch((err) => {
