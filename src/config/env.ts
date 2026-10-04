@@ -12,6 +12,8 @@ const schema = z.object({
   PUBLIC_BASE_URL: z.string().default('http://localhost:8080'),
   API_KEY: z.string().default('dev-key'),
   MOCK_EXTERNALS: bool,
+  /** On boot, create the demo patient and household memory if the database has no patients yet (hosted demos without a shell). */
+  AUTO_SEED: bool,
   /** Open console: skip login entirely. Only for local demos; anyone who can reach the API can read patient data. */
   AUTH_DISABLED: z
     .enum(['true', 'false', '1', '0', ''])

@@ -8,13 +8,13 @@ services:
     dockerfilePath: ./Dockerfile
     plan: starter
     healthCheckPath: /readyz
-    preDeployCommand: npx prisma migrate deploy
     envVars:
       - { key: NODE_ENV, value: production }
       - { key: MOCK_EXTERNALS, value: 'false' }
       - { key: LLM_PROVIDER, value: lyzr }
       - { key: TRUST_PROXY, value: '1' }
       - { key: AUTH_DISABLED, value: 'true' }
+      - { key: AUTO_SEED, value: 'true' }
       - { key: LYZR_INFERENCE_URL, value: 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/' }
       - { key: API_KEY, generateValue: true }
       - { key: SESSION_SECRET, generateValue: true }

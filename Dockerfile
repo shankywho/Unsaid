@@ -58,4 +58,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 # tini forwards SIGTERM so the graceful-shutdown handler runs
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "dist/src/index.js"]
+# apply pending migrations, then start (no shell needed on the host)
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/src/index.js"]
