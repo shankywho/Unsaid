@@ -49,6 +49,7 @@ export default defineConfig({
       LOG_LEVEL: 'warn',
       PORT: String(PORT),
       MOCK_EXTERNALS: 'true',
+      MOCK_LATENCY_MS: '600',
       DATABASE_URL: E2E.databaseUrl,
       REDIS_URL: `${pick('REDIS_URL', 'redis://localhost:6379').replace(/\/\d+$/, '')}/3`,
       QDRANT_URL: pick('QDRANT_URL', 'http://localhost:6333'),

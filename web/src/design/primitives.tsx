@@ -58,7 +58,7 @@ export function Resolved({
 
 export function Wordmark({ size = 20, className }: { size?: number; className?: string }) {
   return (
-    <span className={cn('wm text-ink', className)} style={{ fontSize: size }}>
+    <span className={cn('wm wm-inline text-ink', className)} style={{ fontSize: size }}>
       Unsaid
       <span className="wm-dots" aria-hidden="true">
         <i />

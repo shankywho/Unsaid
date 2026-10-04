@@ -12,6 +12,8 @@ const schema = z.object({
   PUBLIC_BASE_URL: z.string().default('http://localhost:8080'),
   API_KEY: z.string().default('dev-key'),
   MOCK_EXTERNALS: bool,
+  /** Dev/demo only: artificial delay per mocked agent call, so the live trace can be watched. */
+  MOCK_LATENCY_MS: z.coerce.number().int().min(0).max(5000).default(0),
   LOG_LEVEL: z.string().default('info'),
 
   DATABASE_URL: z.string(),

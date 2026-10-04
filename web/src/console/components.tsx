@@ -21,6 +21,7 @@ import {
   SEQUENTIAL,
   nodeHint,
   nodeLabel,
+  skipReason,
   speechAct,
   type ConfView,
   type FeedItem,
@@ -349,7 +350,8 @@ export function ReasoningTimeline({
   onHighlight?: (id: string | null) => void;
   ghost?: boolean;
 }) {
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  // raw-memory and word-map hits start collapsed; the matched facts and the ranked meanings start open
+  const [closed, setClosed] = useState<Record<string, boolean>>({ retrieve_raw_memory: true, retrieve_wordmap: true });
   const by = new Map(steps.map((s) => [s.node, s]));
   const idle = steps.length === 0 && !thinking;
   const parallel = PARALLEL.map((id) => by.get(id)).filter((s): s is StepView => !!s);
@@ -366,7 +368,11 @@ export function ReasoningTimeline({
   };
   const sub = (id: string): string | undefined => {
     const s = by.get(id);
-    if (s?.status === 'skipped') return 'Skipped: memory is switched off';
+    if (s?.status === 'skipped') {
+      const why = skipReason(s);
+      if (why === 'context disabled') return 'Skipped: memory is switched off';
+      return why ? `Skipped: ${why}` : 'Skipped';
+    }
     if (s?.status === 'failed') return s.error ?? 'This step failed';
     if (id === 'classify' && classified) return `${classified.kind.toLowerCase()} · ${classified.reason}`;
     if (id === 'hypothesize' && hyps.length) return `${hyps.length} possible meanings`;
@@ -374,7 +380,7 @@ export function ReasoningTimeline({
       return `${s.retrieval.length} ${s.retrieval.length === 1 ? 'hit' : 'hits'}`;
     if (id === 'await_confirmation' && conf)
       return conf.status === 'pending'
-        ? `Question ${conf.index + 1} of ${conf.count}`
+        ? undefined
         : conf.status === 'resolved'
           ? `Yes on question ${conf.index + 1}`
           : conf.status === 'unresolved'
@@ -445,7 +451,7 @@ export function ReasoningTimeline({
   };
 
   return (
-    <div className={cn(ghost || idle ? 'opacity-70' : '')}>
+    <div data-idle={ghost || idle ? 'true' : undefined}>
       <ol aria-label="Reasoning steps" aria-busy={thinking}>
         <li aria-hidden="true" className="mb-0.5 mt-1 flex items-center gap-2 text-[11px] font-medium text-faint">
           In parallel
@@ -536,7 +542,7 @@ export function ConversationPanel({
     return (
       <div className="pt-5" data-testid="conversation-idle">
         <p className="mono text-[13px] text-faint">Waiting for a fragment</p>
-        <p className="my-2 mb-6 text-[40px] font-medium leading-none tracking-[-0.04em] text-ghost">Listening…</p>
+        <p className="my-2 mb-6 text-[40px] font-medium leading-none tracking-[-0.04em] text-faint">Listening…</p>
         <Waveform active={false} bars={30} />
         <p className="mt-5 max-w-[300px] text-[13px] leading-normal text-faint">
           When {patientName} says a few broken words, Unsaid asks one yes/no question here.

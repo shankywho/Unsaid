@@ -363,6 +363,17 @@ export const orderedSteps = (steps: StepView[]): StepView[] =>
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
 
+/** Why a step was skipped, read from the step's output (`{ skipped: reason }`). */
+export function skipReason(step: StepView): string | undefined {
+  if (step.status !== 'skipped') return undefined;
+  try {
+    const v = JSON.parse(step.preview ?? '{}') as { skipped?: string };
+    return v.skipped;
+  } catch {
+    return undefined;
+  }
+}
+
 export const memoryHits = (steps: StepView[]): Hit[] =>
   steps.find((s) => s.node === 'retrieve_memory')?.retrieval ??
   steps.find((s) => s.node === 'retrieve_raw_memory')?.retrieval ??
@@ -381,6 +392,7 @@ export function fromRun(run: RunDetail): { steps: StepView[]; hypotheses: HypVie
             ? 'running'
             : 'done',
     latencyMs: st.latencyMs ?? undefined,
+    preview: st.status === 'SKIPPED' && st.output ? JSON.stringify(st.output) : undefined,
     startOffsetMs: st.startOffsetMs,
     service: st.service,
     retrieval: toHits(st.retrieval),

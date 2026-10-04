@@ -77,9 +77,11 @@ body {
 .wm {
   font-weight: 600;
   letter-spacing: -0.055em;
+  line-height: 1;
+}
+.wm-inline {
   display: inline-flex;
   align-items: baseline;
-  line-height: 1;
 }
 .wm-dots {
   display: inline-flex;

@@ -1,3 +1,4 @@
+import { env } from '../../config/env';
 import type { LyzrChatRequest, LyzrClient } from './types';
 import { buildConfirmQuestion, isQuestion } from '../../lib/sentences';
 const stripTrail = (t: string) => t.trim().replace(/[.!?…\s]+$/, '');
@@ -9,6 +10,7 @@ export class MockLyzrClient implements LyzrClient {
   }
 
   async chat(req: LyzrChatRequest): Promise<string> {
+    if (env.MOCK_LATENCY_MS > 0) await new Promise((r) => setTimeout(r, env.MOCK_LATENCY_MS));
     let input: any = {};
     try {
       input = JSON.parse(req.message);

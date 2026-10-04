@@ -1,29 +1,39 @@
 import { test, expect } from '@playwright/test';
 
-test('landing has no horizontal overflow at 375px and every feature section renders', async ({ page }) => {
+test('landing has no horizontal overflow at 375px and every section is visible without scrolling into view', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
-  // scroll through so scroll-triggered reveals run
-  for (let y = 0; y < 12000; y += 600) {
-    await page.evaluate((v) => window.scrollTo(0, v), y);
-    await page.waitForTimeout(60);
-  }
+  // no scroll-triggered reveal: every heading is already visible in the DOM and not transparent
   const { sw, cw } = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
     cw: document.documentElement.clientWidth,
   }));
   expect(sw).toBeLessThanOrEqual(cw);
   for (const h of [
-    'Everyday conversation becomes context.',
-    'Every memory shows where it came from.',
-    'A fragment becomes three possible meanings.',
-    'Nothing is said until the patient says yes.',
-    'It learns how this person speaks.',
-    'Private by design.',
+    'Finishing the sentences aphasia takes away.',
+    'From overheard context to a spoken sentence.',
+    'Every fact is visible, and deletable.',
+    'See it work end to end.',
+    'Questions, answered plainly.',
   ]) {
-    await expect(page.getByRole('heading', { name: h })).toBeVisible();
+    const el = page.getByRole('heading', { name: h });
+    await expect(el).toHaveCount(1);
+    const opacity = await el.evaluate((n) => {
+      let o = 1;
+      for (let e: Element | null = n; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+      return o;
+    });
+    expect(opacity).toBe(1);
   }
-  await page.screenshot({ path: '../docs/screenshots/landing-mobile-features.png' });
+  await expect(page.getByRole('heading', { name: /context-dependent fragments resolved within 3 yes\/no questions/ })).toBeVisible();
+});
+
+test('hero shows the confirmed frame by default and under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.waitForTimeout(5000);
+  await expect(page.getByText('Spoken to caregiver').first()).toBeVisible();
+  await expect(page.getByTestId('learn-followup').first()).toContainText('LEARN');
 });
 
 test('console shell has no horizontal overflow at 375px', async ({ page }) => {

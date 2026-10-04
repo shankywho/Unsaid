@@ -63,7 +63,7 @@ export function OmiBadge({ userId }: { userId?: string }) {
       <StatusDot tone={tone === 'live' ? 'live' : tone === 'sim' ? 'sim' : 'danger'} pulse={tone === 'live'} />
       <span>{label}</span>
       {data?.lastSegmentAt && !dropped && (
-        <span className="mono hidden opacity-80 sm:inline">{ago(data.lastSegmentAt)}</span>
+        <span className="mono hidden sm:inline">{ago(data.lastSegmentAt)}</span>
       )}
     </Chip>
   );
@@ -200,7 +200,7 @@ export function Shell() {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col md:min-h-0">
           <TopBar />
-          <main id="main" className="min-h-0 min-w-0 flex-1 md:overflow-y-auto">
+          <main id="main" tabIndex={0} className="min-h-0 min-w-0 flex-1 focus-visible:outline-offset-[-2px] md:overflow-y-auto">
             <Outlet />
           </main>
         </div>
