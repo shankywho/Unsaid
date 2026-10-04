@@ -1782,6 +1782,28 @@ components:
           anyOf:
             - type: integer
             - type: "null"
+        startOffsetMs:
+          type: integer
+          description: ms from run start to this step start (shared timeline for parallel steps)
+        service:
+          type: object
+          properties:
+            provider:
+              type: string
+              enum:
+                - lyzr
+                - qdrant
+                - openai
+                - tts
+                - redis
+                - local
+            name:
+              type: string
+          required:
+            - provider
+            - name
+          additionalProperties: false
+          description: "Sponsor/service tag: lyzr agent, qdrant collection, tts, redis or local"
         attempt:
           type: integer
         startedAt:
@@ -1803,6 +1825,8 @@ components:
         - error
         - retrieval
         - latencyMs
+        - startOffsetMs
+        - service
         - attempt
         - startedAt
         - endedAt

@@ -2,6 +2,15 @@ import type { Prisma, PipelineKind, RunStatus, StepStatus } from '@prisma/client
 import { prisma } from '../db';
 import { bus } from './events';
 import { backoffStorage } from '../lib/http';
+import { stepService } from './services';
+
+/** Run start times, so every step can report its offset on one shared timeline. */
+const runStarts = new Map<string, number>();
+const noteRunStart = (runId: string, at: number) => {
+  runStarts.set(runId, at);
+  if (runStarts.size > 500) runStarts.delete(runStarts.keys().next().value as string);
+};
+const offsetOf = (runId: string, at: number) => Math.max(0, at - (runStarts.get(runId) ?? at));
 
 export const preview = (v: unknown, max = 300): string => {
   const s = typeof v === 'string' ? v : (JSON.stringify(v) ?? '');
@@ -20,6 +29,7 @@ export async function startRun(
   const run = await prisma.run.create({
     data: { userId, pipeline, status: 'RUNNING', input: json(input), contextUsed },
   });
+  noteRunStart(run.id, run.startedAt.getTime());
   bus.publish('run.started', userId, { pipeline, contextUsed }, run.id);
   return run.id;
 }
@@ -66,7 +76,17 @@ export async function startStep(
   const step = await prisma.step.create({
     data: { runId, node, status: 'RUNNING', input: json(input) },
   });
-  bus.publish('step.started', userId, { stepId: step.id, node }, runId);
+  bus.publish(
+    'step.started',
+    userId,
+    {
+      stepId: step.id,
+      node,
+      startOffsetMs: offsetOf(runId, step.startedAt.getTime()),
+      service: stepService(node),
+    },
+    runId,
+  );
   return step.id;
 }
 
@@ -108,6 +128,8 @@ export async function endStep(
     stepId,
     node,
     agentId: meta.agentId,
+    startOffsetMs: offsetOf(runId, startedAt),
+    service: stepService(node, meta.agentId),
     latencyMs,
     backoffMs,
     status,

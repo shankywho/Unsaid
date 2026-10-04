@@ -1,3 +1,4 @@
+import { stepService } from '../../tracing/services';
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { notFound } from '../../lib/errors';
@@ -31,7 +32,13 @@ runsRouter.get('/runs/:id', async (req, res, next) => {
       },
     });
     if (!run) throw notFound('Run trace');
-    return res.status(200).json({ ok: true, data: run });
+    const t0 = run.startedAt.getTime();
+    const steps = run.steps.map((s) => ({
+      ...s,
+      startOffsetMs: Math.max(0, s.startedAt.getTime() - t0),
+      service: stepService(s.node, s.agentId),
+    }));
+    return res.status(200).json({ ok: true, data: { ...run, steps } });
   } catch (err) {
     return next(err);
   }

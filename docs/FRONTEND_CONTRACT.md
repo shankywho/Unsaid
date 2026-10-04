@@ -103,8 +103,8 @@ finished by `assist.resolved` / `assist.unresolved` / `confirmation.expired` (us
 #### `step.started` / `step.completed` / `step.failed` — DAG node lifecycle
 
 ```json
-{ "stepId": "…", "node": "classify" }
-{ "stepId": "…", "node": "retrieve_memory", "latencyMs": 6, "backoffMs": 0, "status": "COMPLETED",
+{ "stepId": "…", "node": "classify", "startOffsetMs": 3, "service": { "provider": "lyzr", "name": "utterance_classifier" } }
+{ "stepId": "…", "node": "retrieve_memory", "startOffsetMs": 1522, "service": { "provider": "qdrant", "name": "unsaid_memory" }, "latencyMs": 6, "backoffMs": 0, "status": "COMPLETED",
   "outputPreview": "[{\"id\":…}]",
   "retrieval": [
     { "id": "16d232…", "type": "routine", "text": "Municipal water bill is due this week, Ramesh handles payment", "score": 0.698 },
@@ -112,6 +112,10 @@ finished by `assist.resolved` / `assist.unresolved` / `confirmation.expired` (us
   ] }
 ```
 
+- `startOffsetMs` is the step start in ms from `run.started`. Parallel steps share one timeline: draw each bar at
+  `startOffsetMs` with width `latencyMs`. `GET /v1/runs/{id}` returns the same two fields on every step.
+- `service` tags the step: `provider` is `lyzr` (`name` = agent), `qdrant` (`name` = collection), `openai` (embeddings),
+  `tts`, `redis` or `local`.
 - `latencyMs` excludes rate-limit backoff (`backoffMs` is reported separately).
 - `retrieval` (only on `retrieve_memory`, `retrieve_raw_memory`, `retrieve_wordmap`) is the list of Qdrant hits with cosine-based `score`.
 - A node skipped by design (e.g. retrieval with context OFF) arrives as `step.completed` with `"status": "SKIPPED"`.

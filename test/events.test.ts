@@ -104,6 +104,17 @@ describe('Phase C — SSE event contract', () => {
     expect(Array.isArray(mem?.data.retrieval)).toBe(true);
     expect((mem!.data.retrieval as Array<{ score: number }>)[0]?.score).toBeGreaterThan(0);
 
+    // every step reports its offset on the run timeline and its sponsor/service tag
+    expect(typeof mem?.data.startOffsetMs).toBe('number');
+    expect((mem?.data.service as { provider: string }).provider).toBe('qdrant');
+    const done = (node: string) =>
+      events.find((e) => e.runId === assistRunId && e.type === 'step.completed' && e.data.node === node);
+    expect((done('hypothesize')?.data.service as { provider: string }).provider).toBe('lyzr');
+    expect((done('await_confirmation')?.data.service as { provider: string }).provider).toBe('redis');
+    expect(done('retrieve_memory')!.data.startOffsetMs as number).toBeGreaterThan(
+      done('classify')!.data.startOffsetMs as number,
+    );
+
     const hyp = events.find((e) => e.type === 'hypotheses.generated')!;
     expect((hyp.data.hypotheses as unknown[]).length).toBeGreaterThanOrEqual(1);
 

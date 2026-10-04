@@ -90,6 +90,13 @@ export const StepSchema = z
       .nullable()
       .meta({ description: 'Qdrant hits (id, type, text, score) for retrieval nodes' }),
     latencyMs: z.number().int().nullable(),
+    startOffsetMs: z
+      .number()
+      .int()
+      .meta({ description: 'ms from run start to this step start (shared timeline for parallel steps)' }),
+    service: z
+      .object({ provider: z.enum(['lyzr', 'qdrant', 'openai', 'tts', 'redis', 'local']), name: z.string() })
+      .meta({ description: 'Sponsor/service tag: lyzr agent, qdrant collection, tts, redis or local' }),
     attempt: z.number().int(),
     startedAt: iso,
     endedAt: iso.nullable(),

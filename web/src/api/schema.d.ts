@@ -535,6 +535,14 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
             latencyMs: number | null;
+            /** @description ms from run start to this step start (shared timeline for parallel steps) */
+            startOffsetMs: number;
+            /** @description Sponsor/service tag: lyzr agent, qdrant collection, tts, redis or local */
+            service: {
+                /** @enum {string} */
+                provider: "lyzr" | "qdrant" | "openai" | "tts" | "redis" | "local";
+                name: string;
+            };
             attempt: number;
             /** Format: date-time */
             startedAt: string;
