@@ -212,8 +212,8 @@ cd web && pnpm build                    # -> web/dist, served by the API in prod
 cd web && pnpm e2e                      # Playwright against a MOCK_EXTERNALS backend; includes axe on every route
 ```
 
-| Landing (resolved frame of the live product demo)  | Live console, after a confirmed sentence                    |
-| -------------------------------------------------- | ----------------------------------------------------------- |
+| Landing (resolved frame of the live product demo)     | Live console, after a confirmed sentence             |
+| ----------------------------------------------------- | ---------------------------------------------------- |
 | ![Landing page](docs/screenshots/landing-desktop.png) | ![Live console](docs/screenshots/live-confirmed.png) |
 
 More: [idle](docs/screenshots/live-idle.png) · [reasoning](docs/screenshots/live-reasoning.png) · [question](docs/screenshots/live-question.png) · [375px mobile](docs/screenshots/landing-mobile.png) · [built vs design-ref](docs/screenshots/compare/).
