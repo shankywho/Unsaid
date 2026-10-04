@@ -23,7 +23,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  */
 export const requireAuth: RequestHandler = (req, _res, next) => {
   if (env.AUTH_DISABLED) {
-    req.principal = { type: 'session', email: 'open-console', expiresAt: Date.now() + 86_400_000 };
+    req.principal = { type: 'session', email: 'open-console', expiresAt: Math.floor(Date.now() / 1000) + 86_400 };
     return next();
   }
   const h = req.header('authorization') ?? '';
