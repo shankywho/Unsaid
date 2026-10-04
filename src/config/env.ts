@@ -13,7 +13,10 @@ const schema = z.object({
   API_KEY: z.string().default('dev-key'),
   MOCK_EXTERNALS: bool,
   /** Open console: skip login entirely. Only for local demos; anyone who can reach the API can read patient data. */
-  AUTH_DISABLED: bool,
+  AUTH_DISABLED: z
+    .enum(['true', 'false', '1', '0', ''])
+    .default('true')
+    .transform((v) => v === 'true' || v === '1' || v === ''),
   /** Dev/demo only: artificial delay per mocked agent call, so the live trace can be watched. */
   MOCK_LATENCY_MS: z.coerce.number().int().min(0).max(5000).default(0),
   LOG_LEVEL: z.string().default('info'),

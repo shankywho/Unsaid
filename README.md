@@ -57,7 +57,7 @@ flowchart TD
     end
 
     subgraph Interaction["Confirmation and speech"]
-        PendingConfirm -->|SSE /v1/stream| Frontend["Frontend (separate, planned)"]
+        PendingConfirm -->|SSE /v1/stream| Frontend["Frontend (web/)"]
         Frontend -->|"POST /v1/confirmations/:id/answer"| ConfirmHandler["Confirmation state machine"]
         ConfirmHandler -->|final sentence| AudioStream["GET /v1/audio/:id"]
     end
@@ -166,8 +166,12 @@ docker compose up -d              # Postgres, Redis, Qdrant
 cp .env.example .env              # then edit; see below for zero-key mode
 pnpm db:migrate
 pnpm seed                         # demo persona + a week of ambient memory
-pnpm dev                          # http://localhost:8080  (/debug dev console, /docs API docs)
+pnpm --dir web install && pnpm --dir web build   # the console UI (served by the API)
+pnpm dev                          # http://localhost:8080  -> landing page; "Open console" goes straight to /app/live
 ```
+
+No login: the console opens directly (`AUTH_DISABLED=true`, the default). For the quickest try-out set `MOCK_EXTERNALS=true`
+in `.env` (no API keys needed), then type a fragment such as `water… Ramesh… bill` on the Live screen and answer Yes or No.
 
 ### Zero-key mock mode
 
@@ -195,15 +199,15 @@ pnpm openapi         # regenerate docs/openapi.yaml
 OpenAPI 3.1: [`docs/openapi.yaml`](docs/openapi.yaml) (Swagger UI at `/docs` outside production). Event semantics, ordering and
 the confirmation state machine: [`docs/FRONTEND_CONTRACT.md`](docs/FRONTEND_CONTRACT.md).
 
-- **Auth:** `POST /auth/login` (demo account from env) sets an httpOnly session cookie; `POST /auth/logout`; `GET /v1/me`. Scripts use
-  `Authorization: Bearer <API_KEY>`. Webhooks use their own secret.
+- **Auth:** off by default (`AUTH_DISABLED=true`): the console and `/v1/*` are open, for local demos. Set `AUTH_DISABLED=false` to require
+  `Authorization: Bearer <API_KEY>` or the session cookie from `POST /auth/login` (demo account from env). Webhooks use their own secret.
 - **Hardening:** helmet, CORS allowlist, rate limits (`/v1`, webhooks, login), 256 KB body limit, zod validation on every route, one error envelope.
 - **Ops:** `/healthz` (liveness), `/readyz` (db, redis, qdrant, Lyzr config), graceful shutdown (HTTP, SSE, BullMQ, Prisma, Redis), JSON logs that never contain transcript text at `info`.
 - **Docs:** [OMI_SETUP](docs/OMI_SETUP.md) · [DEPLOY](docs/DEPLOY.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [DECISIONS](DECISIONS.md)
 
 ## 7. Frontend
 
-A React + Vite + TypeScript app in [`web/`](web): marketing landing page at `/`, login at `/login`, and the product console at `/app`
+A React + Vite + TypeScript app in [`web/`](web): marketing landing page at `/` and the product console at `/app` (no login)
 (Live, Memory, Word map, Runs, Eval, Settings). The API serves the built app, so `pnpm build` in `web/` then `pnpm dev` at the root gives one origin.
 
 ```bash
@@ -217,7 +221,7 @@ cd web && pnpm e2e                      # Playwright against a MOCK_EXTERNALS ba
 | ![Landing page](docs/screenshots/landing-desktop.png) | ![Live console](docs/screenshots/live-confirmed.png) |
 
 More: [idle](docs/screenshots/live-idle.png) · [reasoning](docs/screenshots/live-reasoning.png) · [question](docs/screenshots/live-question.png) · [375px mobile](docs/screenshots/landing-mobile.png) · [built vs design-ref](docs/screenshots/compare/).
-Design system and every component: `/app/_kitchen`. Lighthouse on `/` (mobile, throttled): performance 99, accessibility 100, best practices 100.
+Design system and every component: `/app/_kitchen`. Lighthouse on `/` (mobile, throttled): performance 92–95, accessibility 100.
 The landing demo is scripted (labelled as such) but renders the same components as the console; its timings are the medians from the latest live eval.
 
 `public/debug.html` remains a developer console only (not served in production).
