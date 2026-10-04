@@ -89,6 +89,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment: ${msg}`);
   }
   const e = parsed.data;
+  // Masked or smart-quoted values (for example "•••" copied from a dashboard) crash HTTP clients with an obscure error
+  for (const k of ['QDRANT_API_KEY', 'LYZR_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY'] as const) {
+    if (/[^\x20-\x7e]/.test(e[k]))
+      throw new Error(
+        `Invalid environment: ${k} contains a non-ASCII character (a masked or mis-copied value). Copy the real key again.`,
+      );
+  }
   // The local model is 384-dimensional; Qdrant collections must match it.
   if (
     !e.MOCK_EXTERNALS &&
