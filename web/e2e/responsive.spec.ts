@@ -49,3 +49,12 @@ test('console shell has no horizontal overflow at 375px', async ({ page }) => {
   }));
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test('the hero demo loop never scrolls the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, 3000));
+  const y0 = await page.evaluate(() => window.scrollY);
+  await page.waitForTimeout(16_000); // one full loop starts after 4 s
+  expect(Math.abs((await page.evaluate(() => window.scrollY)) - y0)).toBeLessThan(2);
+});

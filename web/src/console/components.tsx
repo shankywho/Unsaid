@@ -43,7 +43,9 @@ const sourceTag = (s?: string) => (s === 'SIMULATED' ? 'sim' : s ? 'omi' : '');
 export function TranscriptFeed({ feed, patientName }: { feed: FeedItem[]; patientName: string }) {
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    end.current?.scrollIntoView({ block: 'end' });
+    // scroll only the transcript's own scroll area; scrollIntoView would drag the whole page (the landing hero loops)
+    const area = end.current?.closest<HTMLElement>('.overflow-y-auto');
+    if (area) area.scrollTop = area.scrollHeight;
   }, [feed.length]);
   if (feed.length === 0) {
     return (
