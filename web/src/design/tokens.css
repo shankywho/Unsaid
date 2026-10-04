@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/* Unsaid design system. Amber is reserved for live/voice states and resolved sentences. */
+@theme {
+  --color-canvas: #ffffff;
+  --color-surface: #fafaf9;
+  --color-warm: #f6f3ee;
+  --color-border: #ecebe8;
+  --color-border-strong: #d9d7d2;
+  --color-ink: #0b0b0c;
+  --color-muted: #6b6a66;
+  --color-accent: #d97706;
+  --color-accent-text: #a85a06; /* amber for small text: 5.2:1 on white */
+  --color-accent-soft: #fdf3e3;
+  --color-success: #3d6b4f;
+  --color-success-soft: #eef4ef;
+  --color-danger: #a23b34;
+  --color-danger-soft: #faefee;
+
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --shadow-float: 0 8px 24px -12px rgb(11 11 12 / 0.18);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px; /* minimum body size; never smaller */
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  line-height: 1.55;
+  min-width: 320px;
+}
+::selection {
+  background: var(--color-accent-soft);
+}
+
+/* One visible focus ring everywhere */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.on-dark :focus-visible {
+  outline-color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Skeletons (no spinners anywhere) */
+@keyframes sk {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f1f0ed 25%, #f8f7f5 50%, #f1f0ed 75%);
+  background-size: 200% 100%;
+  animation: sk 1.6s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Waveform bars */
+@keyframes bar {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.wave-bar {
+  transform-origin: center;
+  animation: bar 0.9s ease-in-out infinite;
+}
+
+/* Blinking ellipsis for the step that is thinking */
+@keyframes dots {
+  0%,
+  20% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+.dot-pulse {
+  animation: dots 1.2s ease-in-out infinite;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
