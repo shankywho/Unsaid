@@ -1,0 +1,208 @@
+{
+  "timestamp": "2026-10-04T08:26:31.490Z",
+  "provenance": {
+    "mode": "live",
+    "provider": "lyzr",
+    "model": "gpt-4o-mini (Lyzr Studio agents)",
+    "judge": "eval_judge via lyzr"
+  },
+  "totalFragments": 32,
+  "results": [
+    {
+      "mode": "context ON",
+      "top1": 0.63,
+      "top3": 0.94,
+      "avgLatencyMs": 7480,
+      "p50LatencyMs": 7308,
+      "total": 32,
+      "top1Hits": 20,
+      "top3Hits": 30,
+      "reqContextTotal": 22,
+      "reqContextHitsTop1": 12,
+      "reqContextHitsTop3": 21,
+      "noContextTotal": 10,
+      "noContextHitsTop1": 8,
+      "noContextHitsTop3": 9,
+      "stepStats": {
+        "classify": {
+          "node": "classify",
+          "count": 32,
+          "p50Ms": 1478,
+          "avgMs": 1724,
+          "minMs": 1126,
+          "maxMs": 3248
+        },
+        "fragment_analyze": {
+          "node": "fragment_analyze",
+          "count": 32,
+          "p50Ms": 2280,
+          "avgMs": 2363,
+          "minMs": 1462,
+          "maxMs": 3814
+        },
+        "retrieve_memory": {
+          "node": "retrieve_memory",
+          "count": 32,
+          "p50Ms": 18,
+          "avgMs": 19,
+          "minMs": 10,
+          "maxMs": 85
+        },
+        "retrieve_wordmap": {
+          "node": "retrieve_wordmap",
+          "count": 32,
+          "p50Ms": 14,
+          "avgMs": 16,
+          "minMs": 8,
+          "maxMs": 50
+        },
+        "hypothesize": {
+          "node": "hypothesize",
+          "count": 32,
+          "p50Ms": 4739,
+          "avgMs": 4863,
+          "minMs": 3007,
+          "maxMs": 9375
+        },
+        "compose_question": {
+          "node": "compose_question",
+          "count": 32,
+          "p50Ms": 2,
+          "avgMs": 3,
+          "minMs": 1,
+          "maxMs": 7
+        },
+        "eval_judge": {
+          "node": "eval_judge",
+          "count": 50,
+          "p50Ms": 1375,
+          "avgMs": 1650,
+          "minMs": 1028,
+          "maxMs": 2698
+        },
+        "retrieve_raw_memory": {
+          "node": "retrieve_raw_memory",
+          "count": 32,
+          "p50Ms": 13,
+          "avgMs": 16,
+          "minMs": 8,
+          "maxMs": 50
+        },
+        "tts_question": {
+          "node": "tts_question",
+          "count": 32,
+          "p50Ms": 3,
+          "avgMs": 5,
+          "minMs": 1,
+          "maxMs": 33
+        },
+        "await_confirmation": {
+          "node": "await_confirmation",
+          "count": 32,
+          "p50Ms": 10,
+          "avgMs": 12,
+          "minMs": 6,
+          "maxMs": 49
+        }
+      }
+    },
+    {
+      "mode": "context OFF",
+      "top1": 0.63,
+      "top3": 0.72,
+      "avgLatencyMs": 7152,
+      "p50LatencyMs": 6665,
+      "total": 32,
+      "top1Hits": 20,
+      "top3Hits": 23,
+      "reqContextTotal": 22,
+      "reqContextHitsTop1": 11,
+      "reqContextHitsTop3": 14,
+      "noContextTotal": 10,
+      "noContextHitsTop1": 9,
+      "noContextHitsTop3": 9,
+      "stepStats": {
+        "classify": {
+          "node": "classify",
+          "count": 32,
+          "p50Ms": 1496,
+          "avgMs": 1759,
+          "minMs": 1204,
+          "maxMs": 3469
+        },
+        "fragment_analyze": {
+          "node": "fragment_analyze",
+          "count": 32,
+          "p50Ms": 2389,
+          "avgMs": 2480,
+          "minMs": 1447,
+          "maxMs": 4523
+        },
+        "retrieve_memory": {
+          "node": "retrieve_memory",
+          "count": 32,
+          "p50Ms": 2,
+          "avgMs": 3,
+          "minMs": 1,
+          "maxMs": 18
+        },
+        "retrieve_wordmap": {
+          "node": "retrieve_wordmap",
+          "count": 32,
+          "p50Ms": 4,
+          "avgMs": 5,
+          "minMs": 2,
+          "maxMs": 21
+        },
+        "hypothesize": {
+          "node": "hypothesize",
+          "count": 32,
+          "p50Ms": 4064,
+          "avgMs": 4479,
+          "minMs": 3098,
+          "maxMs": 10099
+        },
+        "compose_question": {
+          "node": "compose_question",
+          "count": 32,
+          "p50Ms": 2,
+          "avgMs": 3,
+          "minMs": 1,
+          "maxMs": 8
+        },
+        "eval_judge": {
+          "node": "eval_judge",
+          "count": 53,
+          "p50Ms": 1403,
+          "avgMs": 1760,
+          "minMs": 967,
+          "maxMs": 3745
+        },
+        "retrieve_raw_memory": {
+          "node": "retrieve_raw_memory",
+          "count": 32,
+          "p50Ms": 4,
+          "avgMs": 5,
+          "minMs": 2,
+          "maxMs": 31
+        },
+        "tts_question": {
+          "node": "tts_question",
+          "count": 32,
+          "p50Ms": 3,
+          "avgMs": 3,
+          "minMs": 1,
+          "maxMs": 6
+        },
+        "await_confirmation": {
+          "node": "await_confirmation",
+          "count": 32,
+          "p50Ms": 9,
+          "avgMs": 10,
+          "minMs": 5,
+          "maxMs": 22
+        }
+      }
+    }
+  ]
+}

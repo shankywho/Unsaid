@@ -6,6 +6,9 @@ import { runAssistPipeline } from '../src/orchestrator/assistPipeline';
 import { answerConfirmation } from '../src/confirmations/service';
 import { runLearnPipeline } from '../src/orchestrator/learnPipeline';
 import { runAgent } from '../src/agents/runAgent';
+import fs from 'node:fs';
+import path from 'node:path';
+import { evalProvenance } from './eval';
 import { EvalJudgeOutputSchema, type HypothesisItem } from '../src/agents/schemas';
 
 interface LearningCase {
@@ -101,6 +104,10 @@ const CASES: LearningCase[] = [
 ];
 
 export async function runLearningLoopEval() {
+  const prov = evalProvenance();
+  if (prov.mode === 'mock' && process.env.EVAL_ALLOW_MOCK !== 'true') {
+    throw new Error('eval:learn must run live (MOCK_EXTERNALS=false, LLM_PROVIDER=lyzr).');
+  }
   console.log('=====================================================');
   console.log('  UNSAID — Learning Loop Evaluation                  ');
   console.log('  Testing adaptation to patient-specific phrasing    ');
@@ -316,8 +323,21 @@ export async function runLearningLoopEval() {
     console.log(`${scCol} ${phCol} ${bCol} ${aCol} ${delta}`);
   }
   console.log('--------------------------- ------------------------ -------------- ------------- -----');
-  console.log(`FIRST-TRY ACCURACY:         Before: ${beforeAcc}% (${beforeMatches}/${results.length})     After: ${afterAcc}% (${afterMatches}/${results.length})     +${afterAcc - beforeAcc}% Gain`);
+  console.log(
+    `FIRST-TRY ACCURACY:         Before: ${beforeAcc}% (${beforeMatches}/${results.length})     After: ${afterAcc}% (${afterMatches}/${results.length})     +${afterAcc - beforeAcc}% Gain`,
+  );
   console.log('=============================================================================\n');
+
+  const outDir = process.env.EVAL_RESULTS_DIR
+    ? path.resolve(process.env.EVAL_RESULTS_DIR)
+    : path.resolve(__dirname, '../eval-results');
+  fs.mkdirSync(outDir, { recursive: true });
+  const ts = new Date().toISOString();
+  fs.writeFileSync(
+    path.join(outDir, `learn-${ts.replace(/[:.]/g, '-')}.json`),
+    JSON.stringify({ timestamp: ts, provenance: prov, beforeAcc, afterAcc, results }, null, 2),
+    'utf8',
+  );
 
   return {
     results,

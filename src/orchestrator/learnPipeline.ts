@@ -54,15 +54,15 @@ export async function runLearnPipeline(input: LearnPipelineInput): Promise<{ run
             await upsertResolvedUtterance(userId, fragment, confirmedSentence);
           }
 
-          // 2. Save any learned substitutions (strictly true substitutions, not translations or time formats)
+          // 2. Save any learned substitutions (only when the learner classified relation=SUBSTITUTION)
           if (learned?.substitutions) {
             for (const sub of learned.substitutions) {
-              if (isTrueSubstitution(sub.said, sub.meant)) {
+              if (isTrueSubstitution(sub)) {
                 await upsertSubstitution(userId, sub.said, sub.meant, 'SUBSTITUTION');
               } else {
                 logger.info(
-                  { userId, said: sub.said, meant: sub.meant },
-                  'Filtered out non-substitution (translation, time format, or identity)',
+                  { userId, said: sub.said, meant: sub.meant, relation: sub.relation },
+                  'Not stored: relation is not SUBSTITUTION',
                 );
               }
             }

@@ -1062,11 +1062,15 @@ export class MockLyzrClient implements LyzrClient {
       case 'learner': {
         const fragment = (input.fragment || '').toLowerCase();
         const confirmed = (input.confirmedSentence || '').toLowerCase();
-        const substitutions: Array<{ said: string; meant: string }> = [];
+        const substitutions: Array<{ said: string; meant: string; relation: string }> = [];
         const nameAliases: Array<{ said: string; meant: string }> = [];
 
         if (fragment.includes('car') && (confirmed.includes('walk') || confirmed.includes('bus'))) {
-          substitutions.push({ said: 'car', meant: confirmed.includes('walk') ? 'walk' : 'bus' });
+          substitutions.push({
+            said: 'car',
+            meant: confirmed.includes('walk') ? 'walk' : 'bus',
+            relation: 'SUBSTITUTION',
+          });
         }
         if (fragment.includes('pri') && confirmed.includes('priya')) {
           nameAliases.push({ said: 'Pri', meant: 'Priya' });

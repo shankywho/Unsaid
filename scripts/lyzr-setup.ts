@@ -56,6 +56,39 @@ const AGENT_SPECS: Record<AgentName, AgentSpec> = {
   },
 };
 
+function agentBody(spec: AgentSpec, prompt: string): string {
+  return JSON.stringify({
+    name: `Unsaid - ${spec.name}`,
+    description: spec.description,
+    agent_instructions: prompt,
+    response_format: { type: 'json_object' },
+    provider_id: 'openai',
+    model: 'gpt-4o-mini',
+    top_p: 1,
+    temperature: spec.temperature,
+  });
+}
+
+/** Re-sync the prompt of an already-provisioned agent (keeps its id). */
+async function tryUpdateLyzrAgent(
+  spec: AgentSpec,
+  agentId: string,
+  prompt: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetchRetry(`https://agent-prod.studio.lyzr.ai/v3/agents/${agentId}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', 'x-api-key': env.LYZR_API_KEY },
+      body: agentBody(spec, prompt),
+      timeoutMs: 25_000,
+    });
+    if (res.ok) return { ok: true };
+    return { ok: false, error: `API status ${res.status}: ${(await res.text()).slice(0, 200)}` };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}
+
 async function tryCreateLyzrAgent(
   spec: AgentSpec,
   prompt: string,
@@ -71,16 +104,7 @@ async function tryCreateLyzrAgent(
         'content-type': 'application/json',
         'x-api-key': env.LYZR_API_KEY,
       },
-      body: JSON.stringify({
-        name: `Unsaid - ${spec.name}`,
-        description: spec.description,
-        agent_instructions: prompt,
-        response_format: { type: 'json_object' },
-        provider_id: 'openai',
-        model: 'gpt-4o-mini',
-        top_p: 1,
-        temperature: spec.temperature,
-      }),
+      body: agentBody(spec, prompt),
       timeoutMs: 25_000,
     });
 
@@ -104,7 +128,9 @@ export async function main(): Promise<void> {
   const promptsDir = path.resolve(__dirname, '../src/agents/prompts');
   const results: Record<string, string> = {};
 
+  const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
   for (const name of AGENT_NAMES) {
+    if (only && name !== only) continue;
     const spec = AGENT_SPECS[name];
     const promptPath = path.join(promptsDir, `${name}.md`);
     let prompt = '';
@@ -118,6 +144,24 @@ export async function main(): Promise<void> {
     console.log(`  Target Env Var: ${spec.envVar}`);
     console.log(`  Recommended Temp: ${spec.temperature}`);
     console.log(`  Description: ${spec.description}`);
+
+    const existingId = (process.env[spec.envVar] ?? '').trim();
+    if (env.LYZR_API_KEY && existingId) {
+      const upd = await tryUpdateLyzrAgent(spec, existingId, prompt);
+      if (upd.ok) {
+        console.log(
+          `  ✓ Existing agent ${existingId} updated with the current prompt (no new agent created).`,
+        );
+        results[spec.envVar] = existingId;
+        continue;
+      }
+      console.log(`  ⚠ Update of ${existingId} failed: ${upd.error}`);
+      console.log(
+        '  -> Paste src/agents/prompts/' + name + '.md into the agent instructions in Lyzr Studio manually.',
+      );
+      results[spec.envVar] = existingId;
+      continue;
+    }
 
     if (env.LYZR_API_KEY) {
       console.log('  Attempting automated creation via Lyzr Studio API...');

@@ -73,33 +73,20 @@ describe('Phase 6 — LEARN pipeline and WordMap feedback loop', () => {
   });
 
   describe('Word Map Rules: Substitution Replacement & Learner Filtering', () => {
-    it('Rule 1: isTrueSubstitution accepts true paraphasias and rejects translations and time formats', async () => {
+    it('Rule 1: only learner relation=SUBSTITUTION is stored as a substitution', async () => {
       const { isTrueSubstitution } = await import('../src/memory/wordMap');
 
-      // True aphasic substitutions / paraphasias
-      expect(isTrueSubstitution('car', 'walk')).toBe(true);
-      expect(isTrueSubstitution('tea', 'coffee')).toBe(true);
-      expect(isTrueSubstitution('thing', 'glasses')).toBe(true);
-      expect(isTrueSubstitution('apple', 'medicine')).toBe(true);
+      expect(isTrueSubstitution({ said: 'car', meant: 'walk', relation: 'SUBSTITUTION' })).toBe(true);
+      expect(isTrueSubstitution({ said: 'tea', meant: 'coffee', relation: 'SUBSTITUTION' })).toBe(true);
 
-      // Rejects translations (Hindi/English bilingual words)
-      expect(isTrueSubstitution('beti', 'daughter')).toBe(false);
-      expect(isTrueSubstitution('chai', 'tea')).toBe(false);
-      expect(isTrueSubstitution('pani', 'water')).toBe(false);
-      expect(isTrueSubstitution('kaha', 'where')).toBe(false);
-      expect(isTrueSubstitution('nahi', 'no')).toBe(false);
-      expect(isTrueSubstitution('mana', 'forbidden')).toBe(false);
-
-      // Rejects time / number formatting expansions
-      expect(isTrueSubstitution('six', '6 PM')).toBe(false);
-      expect(isTrueSubstitution('6', '6 PM')).toBe(false);
-      expect(isTrueSubstitution('seven', '7:00')).toBe(false);
-      expect(isTrueSubstitution('twice', '2 times')).toBe(false);
-
-      // Rejects identical or substring tokens
-      expect(isTrueSubstitution('park', 'park')).toBe(false);
-      expect(isTrueSubstitution('park', 'evening walk in the park')).toBe(false);
-      expect(isTrueSubstitution('', 'walk')).toBe(false);
+      for (const relation of ['TRANSLATION', 'FORMAT', 'ALIAS']) {
+        expect(isTrueSubstitution({ said: 'x', meant: 'y', relation })).toBe(false);
+      }
+      // Unclassified pairs are unverified and never stored
+      expect(isTrueSubstitution({ said: 'car', meant: 'walk' })).toBe(false);
+      // Degenerate pairs are rejected even when labelled SUBSTITUTION
+      expect(isTrueSubstitution({ said: 'park', meant: 'Park', relation: 'SUBSTITUTION' })).toBe(false);
+      expect(isTrueSubstitution({ said: '', meant: 'walk', relation: 'SUBSTITUTION' })).toBe(false);
     });
 
     it('Rule 2: applySubstitutions REPLACES said word with meant word and never combines both', async () => {
@@ -120,4 +107,3 @@ describe('Phase 6 — LEARN pipeline and WordMap feedback loop', () => {
     });
   });
 });
-

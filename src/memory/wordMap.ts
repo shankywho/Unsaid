@@ -190,54 +190,20 @@ export async function upsertSubstitution(
   logger.info({ userId, said, meant, kind }, 'Upserted word map substitution');
 }
 
-const COMMON_TRANSLATIONS: Record<string, string[]> = {
-  beti: ['daughter', 'girl'],
-  beta: ['son', 'boy'],
-  chai: ['tea'],
-  pani: ['water'],
-  nahi: ['no', 'not', 'never'],
-  kaha: ['where'],
-  kya: ['what'],
-  dadu: ['grandfather', 'grandpa'],
-  mana: ['forbidden', 'refuse', 'not allowed', 'denied'],
-};
+export const LEARNER_RELATIONS = ['SUBSTITUTION', 'TRANSLATION', 'FORMAT', 'ALIAS'] as const;
+export type LearnerRelation = (typeof LEARNER_RELATIONS)[number];
 
 /**
- * Validates whether a candidate pair is a TRUE aphasic substitution (patient said X, meant a different word Y)
- * vs a language translation (beti -> daughter) or time/number formatting expansion (six -> 6 PM).
+ * A learned pair is stored as a word-map substitution only when the learner agent classified the
+ * said->meant relation as SUBSTITUTION (the speaker produced word X but meant a different concept Y).
+ * TRANSLATION (language pair), FORMAT (time/number rewriting) and ALIAS (names; stored separately) are not.
+ * A missing relation is treated as unverified and is not stored.
  */
-export function isTrueSubstitution(said: string, meant: string): boolean {
-  const s = said.trim().toLowerCase();
-  const m = meant.trim().toLowerCase();
-
-  // 1. Identity or empty
+export function isTrueSubstitution(sub: { said: string; meant: string; relation?: string }): boolean {
+  const s = sub.said.trim().toLowerCase();
+  const m = sub.meant.trim().toLowerCase();
   if (!s || !m || s === m) return false;
-
-  // 2. Time/number formatting expansions (e.g. "six" -> "6 PM", "6" -> "6 PM", "twice" -> "2 times")
-  const timeRegex = /^\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i;
-  const numWords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
-  if (numWords.includes(s) && (timeRegex.test(m) || m.includes('pm') || m.includes('am'))) {
-    return false;
-  }
-  if (/^\d+$/.test(s) && (timeRegex.test(m) || m.includes('pm') || m.includes('am'))) {
-    return false;
-  }
-  if ((s === 'twice' || s === '2') && (m.includes('2') || m.includes('twice'))) {
-    return false;
-  }
-
-  // 3. Known Hindi/English translations
-  if (COMMON_TRANSLATIONS[s] && COMMON_TRANSLATIONS[s].some((trans) => m.includes(trans))) {
-    return false;
-  }
-
-  // 4. Meant phrase simply contains said token (e.g., "park" -> "park at 6 PM")
-  const meantTokens = m.split(/[\s,.;:!?…]+/).filter(Boolean);
-  if (meantTokens.includes(s)) {
-    return false;
-  }
-
-  return true;
+  return sub.relation === 'SUBSTITUTION';
 }
 
 /**

@@ -8,7 +8,7 @@ import { runIngestPipeline } from '../src/orchestrator/ingestPipeline';
 import { runAssistPipeline } from '../src/orchestrator/assistPipeline';
 import { runAgent } from '../src/agents/runAgent';
 import { EvalJudgeOutputSchema, type HypothesisItem } from '../src/agents/schemas';
-import { upsertSubstitution } from '../src/memory/wordMap';
+import { env } from '../src/config/env';
 
 interface EvalItem {
   fragment: string;
@@ -68,7 +68,29 @@ async function resetUserWordMap(userId: string): Promise<void> {
   // Word map starts completely empty per leakage audit
 }
 
+export function evalProvenance(): { mode: 'live' | 'mock'; provider: string; model: string; judge: string } {
+  const mock = env.MOCK_EXTERNALS || env.LLM_PROVIDER === 'mock';
+  const provider = mock ? 'mock' : env.LLM_PROVIDER;
+  const model = mock
+    ? 'deterministic-mock'
+    : provider === 'groq'
+      ? env.GROQ_MODEL
+      : 'gpt-4o-mini (Lyzr Studio agents)';
+  return {
+    mode: mock ? 'mock' : 'live',
+    provider,
+    model,
+    judge: `eval_judge via ${mock ? 'mock client' : provider}`,
+  };
+}
+
 export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
+  const prov = evalProvenance();
+  if (prov.mode === 'mock' && process.env.EVAL_ALLOW_MOCK !== 'true') {
+    throw new Error(
+      'pnpm eval must run live (MOCK_EXTERNALS=false, LLM_PROVIDER=lyzr). Set EVAL_ALLOW_MOCK=true only for smoke tests.',
+    );
+  }
   console.log('=====================================================');
   console.log('  UNSAID — Ablation Evaluation (Context ON vs OFF)   ');
   console.log('=====================================================\n');
@@ -223,7 +245,8 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
             hypothesisIntent: top1.intent,
             goldIntent: item.goldIntent,
             goldKeywords: item.goldKeywords,
-            rubric: 'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
+            rubric:
+              'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
           },
           { userId: user.id },
         );
@@ -247,7 +270,8 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
                 hypothesisIntent: hyp.intent,
                 goldIntent: item.goldIntent,
                 goldKeywords: item.goldKeywords,
-                rubric: 'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
+                rubric:
+                  'MATCH if confirming the hypothesis communicates the patient intent: same core action, same key entities, compatible speech act. Do NOT require stated reasons, emotions, or exact wording. Extra correct detail from memory is fine.',
               },
               { userId: user.id },
             );
@@ -326,14 +350,22 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
   const splitTable = [
     'Mode         Subset                  Top-1 (Hits / N)       Top-3 (Hits / N)',
     '------------ ----------------------- ---------------------- ----------------------',
-    `Context ON   requiresContext = true  ${resultOn.reqContextHitsTop1}/${resultOn.reqContextTotal} (${(resultOn.reqContextHitsTop1 / resultOn.reqContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
-      `${resultOn.reqContextHitsTop3}/${resultOn.reqContextTotal} (${(resultOn.reqContextHitsTop3 / resultOn.reqContextTotal * 100).toFixed(1)}%)`,
-    `Context ON   requiresContext = false ${resultOn.noContextHitsTop1}/${resultOn.noContextTotal} (${(resultOn.noContextHitsTop1 / resultOn.noContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
-      `${resultOn.noContextHitsTop3}/${resultOn.noContextTotal} (${(resultOn.noContextHitsTop3 / resultOn.noContextTotal * 100).toFixed(1)}%)`,
-    `Context OFF  requiresContext = true  ${resultOff.reqContextHitsTop1}/${resultOff.reqContextTotal} (${(resultOff.reqContextHitsTop1 / resultOff.reqContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
-      `${resultOff.reqContextHitsTop3}/${resultOff.reqContextTotal} (${(resultOff.reqContextHitsTop3 / resultOff.reqContextTotal * 100).toFixed(1)}%)`,
-    `Context OFF  requiresContext = false ${resultOff.noContextHitsTop1}/${resultOff.noContextTotal} (${(resultOff.noContextHitsTop1 / resultOff.noContextTotal * 100).toFixed(1)}%)`.padEnd(36) +
-      `${resultOff.noContextHitsTop3}/${resultOff.noContextTotal} (${(resultOff.noContextHitsTop3 / resultOff.noContextTotal * 100).toFixed(1)}%)`,
+    `Context ON   requiresContext = true  ${resultOn.reqContextHitsTop1}/${resultOn.reqContextTotal} (${((resultOn.reqContextHitsTop1 / resultOn.reqContextTotal) * 100).toFixed(1)}%)`.padEnd(
+      36,
+    ) +
+      `${resultOn.reqContextHitsTop3}/${resultOn.reqContextTotal} (${((resultOn.reqContextHitsTop3 / resultOn.reqContextTotal) * 100).toFixed(1)}%)`,
+    `Context ON   requiresContext = false ${resultOn.noContextHitsTop1}/${resultOn.noContextTotal} (${((resultOn.noContextHitsTop1 / resultOn.noContextTotal) * 100).toFixed(1)}%)`.padEnd(
+      36,
+    ) +
+      `${resultOn.noContextHitsTop3}/${resultOn.noContextTotal} (${((resultOn.noContextHitsTop3 / resultOn.noContextTotal) * 100).toFixed(1)}%)`,
+    `Context OFF  requiresContext = true  ${resultOff.reqContextHitsTop1}/${resultOff.reqContextTotal} (${((resultOff.reqContextHitsTop1 / resultOff.reqContextTotal) * 100).toFixed(1)}%)`.padEnd(
+      36,
+    ) +
+      `${resultOff.reqContextHitsTop3}/${resultOff.reqContextTotal} (${((resultOff.reqContextHitsTop3 / resultOff.reqContextTotal) * 100).toFixed(1)}%)`,
+    `Context OFF  requiresContext = false ${resultOff.noContextHitsTop1}/${resultOff.noContextTotal} (${((resultOff.noContextHitsTop1 / resultOff.noContextTotal) * 100).toFixed(1)}%)`.padEnd(
+      36,
+    ) +
+      `${resultOff.noContextHitsTop3}/${resultOff.noContextTotal} (${((resultOff.noContextHitsTop3 / resultOff.noContextTotal) * 100).toFixed(1)}%)`,
     '------------ ----------------------- ---------------------- ----------------------',
   ].join('\n');
 
@@ -373,7 +405,9 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
   console.log('\n=====================================================\n');
 
   // Save report to eval-results/
-  const outDir = path.resolve(__dirname, '../eval-results');
+  const outDir = process.env.EVAL_RESULTS_DIR
+    ? path.resolve(process.env.EVAL_RESULTS_DIR)
+    : path.resolve(__dirname, '../eval-results');
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
   }
@@ -384,6 +418,7 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
 
   const reportData = {
     timestamp: new Date().toISOString(),
+    provenance: prov,
     totalFragments: fragments.length,
     results: [resultOn, resultOff],
   };
@@ -408,8 +443,10 @@ ${stepTable}
 
 - **Total Test Fragments:** ${fragments.length}
 - **Context Dependent:** ~70%
-- **Inference Engine:** Lyzr Studio v3 (OpenAI gpt-4o-mini backend)
-- **Evaluation Agent:** \`eval_judge\` via Lyzr
+- **Run mode:** ${prov.mode}${prov.mode === 'mock' ? ' (SMOKE TEST ONLY, not a benchmark)' : ''}
+- **Provider / model:** ${prov.provider} / ${prov.model}
+- **Judge:** ${prov.judge}
+- **Run timestamp:** ${reportData.timestamp}
 `;
   fs.writeFileSync(mdPath, mdReport, 'utf8');
 

@@ -89,6 +89,7 @@ export const LearnerOutputSchema = z.object({
       z.object({
         said: z.string(),
         meant: z.string(),
+        relation: z.enum(['SUBSTITUTION', 'TRANSLATION', 'FORMAT', 'ALIAS']).optional(),
       }),
     )
     .default([]),

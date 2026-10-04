@@ -1,0 +1,123 @@
+{
+  "timestamp": "2026-10-04T08:32:04.436Z",
+  "provenance": {
+    "mode": "live",
+    "provider": "lyzr",
+    "model": "gpt-4o-mini (Lyzr Studio agents)",
+    "judge": "eval_judge via lyzr"
+  },
+  "beforeAcc": 10,
+  "afterAcc": 30,
+  "results": [
+    {
+      "name": "Semantic Paraphasia (\"car\" -> \"walk\")",
+      "testFragment": "car… today… garden",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "Use the car today to go to the garden",
+      "afterMatch": true,
+      "afterConfidence": 0.65,
+      "afterIntent": "Take a walk in the garden today",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\""
+    },
+    {
+      "name": "Name Alias (\"Pri\" -> \"Priya\")",
+      "testFragment": "Pri… Sunday… what time?",
+      "beforeMatch": true,
+      "beforeConfidence": 0.75,
+      "beforeIntent": "Asking about Priya's arrival time on Sunday",
+      "afterMatch": true,
+      "afterConfidence": 0.7,
+      "afterIntent": "Ask what time Priya is arriving on Sunday",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\""
+    },
+    {
+      "name": "Anomic Circumlocution (\"the thing… eyes\" -> \"reading glasses\")",
+      "testFragment": "thing… eyes… table",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "Mention something about eyes on the table",
+      "afterMatch": false,
+      "afterConfidence": 0.7,
+      "afterIntent": "State that reading glasses are broken",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\""
+    },
+    {
+      "name": "Phonemic Paraphasia (\"bap\" -> \"bat\")",
+      "testFragment": "Aarav… new… bap",
+      "beforeMatch": false,
+      "beforeConfidence": 0.65,
+      "beforeIntent": "Inform about Aarav's new cricket bat",
+      "afterMatch": false,
+      "afterConfidence": 0.7,
+      "afterIntent": "Aarav's cricket bat grip is broken.",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\""
+    },
+    {
+      "name": "Semantic Paraphasia (\"tea\" -> \"coffee\")",
+      "testFragment": "hot… tea… please",
+      "beforeMatch": false,
+      "beforeConfidence": 0.7,
+      "beforeIntent": "Request hot tea",
+      "afterMatch": false,
+      "afterConfidence": 0.75,
+      "afterIntent": "Request a cup of hot coffee",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\""
+    },
+    {
+      "name": "Semantic Paraphasia (\"radio\" -> \"newspaper\")",
+      "testFragment": "radio… table… where?",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "Ask where the radio is located in relation to the table",
+      "afterMatch": false,
+      "afterConfidence": 0.75,
+      "afterIntent": "Where is the newspaper located?",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\", \"radio\"->\"newspaper\""
+    },
+    {
+      "name": "Name Alias (\"Ram\" -> \"Ramesh\")",
+      "testFragment": "Ram… home… when?",
+      "beforeMatch": false,
+      "beforeConfidence": 0.65,
+      "beforeIntent": "Ask when Ram is coming home",
+      "afterMatch": true,
+      "afterConfidence": 0.7,
+      "afterIntent": "Ask when Ramesh is coming home",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\", \"radio\"->\"newspaper\", \"ram\"->\"Ramesh\""
+    },
+    {
+      "name": "Anomic Circumlocution (\"the loud box\" -> \"vintage radio\")",
+      "testFragment": "loud box… battery",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "The loud box has a battery issue",
+      "afterMatch": false,
+      "afterConfidence": 0.7,
+      "afterIntent": "Request battery for vintage radio",
+      "learnedSubstitutions": "\"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\", \"radio\"->\"newspaper\", \"ram\"->\"Ramesh\", \"ram\"->\"Ram\", \"loud box\"->\"vintage radio\", \"songs\"->\"old songs\""
+    },
+    {
+      "name": "Semantic Paraphasia (\"doctor\" -> \"physio\")",
+      "testFragment": "doctor… exercises… today?",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "Ask if Dr. Mehta recommended exercises for today",
+      "afterMatch": false,
+      "afterConfidence": 0.7,
+      "afterIntent": "Ask about exercises from the physiotherapist today",
+      "learnedSubstitutions": "\"box\"->\"speaker\", \"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\", \"radio\"->\"newspaper\", \"ram\"->\"Ramesh\", \"ram\"->\"Ram\", \"loud box\"->\"vintage radio\", \"songs\"->\"old songs\", \"doctor\"->\"physiotherapist\", \"shoulder\"->\"exercises\""
+    },
+    {
+      "name": "Semantic Paraphasia (\"apple\" -> \"medicine\")",
+      "testFragment": "morning… apple… water",
+      "beforeMatch": false,
+      "beforeConfidence": 0.6,
+      "beforeIntent": "Prepare apple water for the morning",
+      "afterMatch": false,
+      "afterConfidence": 0.7,
+      "afterIntent": "Take prescribed diabetes medicine with water in the morning",
+      "learnedSubstitutions": "\"box\"->\"speaker\", \"car\"->\"walk\", \"car\"->\"time\", \"six\"->\"evening\", \"beti\"->\"daughter\", \"pri\"->\"Priya\", \"the thing\"->\"reading glasses\", \"eyes\"->\"glasses\", \"bap\"->\"bat\", \"tea\"->\"coffee\", \"radio\"->\"newspaper\", \"ram\"->\"Ramesh\", \"ram\"->\"Ram\", \"loud box\"->\"vintage radio\", \"songs\"->\"old songs\", \"doctor\"->\"physiotherapist\", \"shoulder\"->\"exercises\", \"apple\"->\"my prescribed diabetes medicine\""
+    }
+  ]
+}

@@ -6,3 +6,5 @@ storage
 public
 prisma/migrations
 UNSAID_BUILD.md
+src/agents/prompts
+docs/openapi.yaml
