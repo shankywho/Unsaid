@@ -28,6 +28,7 @@ COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY web/ ./
 COPY docs/eval /build/docs/eval
+COPY fixtures/persona-ramesh-family.json /build/fixtures/persona-ramesh-family.json
 RUN pnpm build
 
 # ---------- prod deps only ----------

@@ -4,3 +4,4 @@ test-results
 playwright-report
 src/generated
 .lighthouse
+demo-video
