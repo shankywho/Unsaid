@@ -19,7 +19,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 /**
  * Accepts, in order: `Authorization: Bearer <API_KEY>` (scripts), `?api_key=` (EventSource/<audio>
  * cannot set headers; used by /debug), or the httpOnly session cookie issued by POST /auth/login.
- * Cookie-authenticated state-changing requests must carry an allowlisted `Origin` (CSRF defence).
+ * Cookie-authenticated state-changing requests must come from the same origin or an allowlisted `Origin` (CSRF defence).
  */
 export const requireAuth: RequestHandler = (req, _res, next) => {
   const h = req.header('authorization') ?? '';
@@ -34,7 +34,10 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
   if (session) {
     if (!SAFE_METHODS.has(req.method)) {
       const origin = req.header('origin');
-      if (origin && !allowedOrigins().includes(origin)) return next(forbidden('origin not allowed'));
+      // same-origin (the SPA served by this API) is always fine; cross-origin must be on the allowlist
+      const sameOrigin = origin === `${req.protocol}://${req.get('host')}`;
+      if (origin && !sameOrigin && !allowedOrigins().includes(origin))
+        return next(forbidden('origin not allowed'));
     }
     req.principal = { type: 'session', email: session.sub, expiresAt: session.exp };
     return next();

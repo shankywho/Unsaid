@@ -74,6 +74,14 @@ describe('Phase B — auth', () => {
       .set('Origin', 'https://evil.example')
       .send({ displayName: 'x' });
     expect(res.status).toBe(403);
+    // same-origin (the bundled web app) is allowed
+    const same = await request(app)
+      .post('/v1/users')
+      .set('Cookie', cookie)
+      .set('Host', 'api.example.test')
+      .set('Origin', 'http://api.example.test')
+      .send({ displayName: 'same-origin' });
+    expect(same.status).toBe(201);
     // same call with the API key is not subject to the cookie CSRF rule
     const ok = await request(app)
       .post('/v1/users')
@@ -315,6 +323,36 @@ describe('Phase B — Omi webhook: auth, idempotency, status', () => {
     expect(res.body.data.segmentsLast5Min).toMatchObject({ OMI_REALTIME: 1, SIMULATED: 1, OMI_MEMORY: 0 });
     expect(res.body.data.lastSegmentSource).toBe('SIMULATED');
     expect(res.body.data.rawWebhooksLast5Min).toBe(1);
+  });
+});
+
+describe('Console API — /v1/segments', () => {
+  const app = createApp();
+  beforeEach(async () => {
+    await resetAll();
+  });
+  it('lists recent segments oldest-first, filters by dedupe key and is tenant-scoped', async () => {
+    const a = await makeUser({ displayName: 'A' });
+    const b = await makeUser({ displayName: 'B' });
+    for (const [u, text] of [
+      [a, 'one'],
+      [a, 'two'],
+      [b, 'other tenant'],
+    ] as const) {
+      await request(app)
+        .post('/v1/simulate/segments')
+        .set(bearer)
+        .send({ userId: u.id, sessionId: 's', segments: [{ text, isUser: false }] });
+    }
+    const list = await request(app).get(`/v1/segments?userId=${a.id}`).set(bearer);
+    expect(list.body.data.map((s: { text: string }) => s.text)).toEqual(['one', 'two']);
+    const key = list.body.data[1].dedupeKey;
+    const one = await request(app).get(`/v1/segments?userId=${a.id}&ids=${key},nope`).set(bearer);
+    expect(one.body.data).toHaveLength(1);
+    expect(one.body.data[0].text).toBe('two');
+    const leak = await request(app).get(`/v1/segments?userId=${b.id}&ids=${key}`).set(bearer);
+    expect(leak.body.data).toHaveLength(0);
+    expect((await request(app).get('/v1/segments').set(bearer)).status).toBe(400);
   });
 });
 

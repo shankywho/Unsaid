@@ -64,6 +64,7 @@ const schema = z.object({
   SESSION_SECRET: z.string().default(''),
   SESSION_TTL_HOURS: z.coerce.number().int().positive().default(24),
   COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  WEB_DIST: z.string().default(''), // built frontend (web/dist) to serve; auto-detected when empty
   ENABLE_DOCS: bool, // force /docs on in production
 });
 

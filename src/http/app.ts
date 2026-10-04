@@ -1,4 +1,6 @@
 import express from 'express';
+import compression from 'compression';
+import fs from 'node:fs';
 import path from 'node:path';
 import { env } from '../config/env';
 import { logger } from '../lib/logger';
@@ -21,6 +23,16 @@ import { docsRouter } from './routes/docs';
 
 export const docsEnabled = (): boolean => env.NODE_ENV !== 'production' || env.ENABLE_DOCS;
 
+function findWebDist(): string | null {
+  if (env.WEB_DIST === 'off') return null;
+  const candidates = [
+    env.WEB_DIST,
+    path.resolve(__dirname, '../../web/dist'),
+    path.resolve(__dirname, '../../../web/dist'),
+  ].filter(Boolean);
+  return candidates.find((c) => fs.existsSync(path.join(c, 'index.html'))) ?? null;
+}
+
 export function createApp(): express.Express {
   const app = express();
   app.disable('x-powered-by');
@@ -28,6 +40,8 @@ export function createApp(): express.Express {
 
   app.use(requestId);
   app.use(securityHeaders);
+  // gzip text responses; never the SSE stream (buffering would hold events back)
+  app.use(compression({ filter: (req, res) => req.path !== '/v1/stream' && compression.filter(req, res) }));
   app.use(corsAllowlist);
 
   // Structured access log: never the query string (may carry api_key/secret) and never the body.
@@ -74,6 +88,29 @@ export function createApp(): express.Express {
     memoryRouter,
     omiRouter,
   );
+  // Built frontend (web/dist): static assets + SPA fallback for browser navigations. API paths never fall through to it.
+  const webDist = findWebDist();
+  if (webDist) {
+    app.use(
+      express.static(webDist, {
+        index: false,
+        setHeaders: (res, file) => {
+          // hashed build assets never change; everything else revalidates
+          res.setHeader(
+            'Cache-Control',
+            file.includes(`${path.sep}assets${path.sep}`)
+              ? 'public, max-age=31536000, immutable'
+              : 'no-cache',
+          );
+        },
+      }),
+    );
+    app.get(/^\/(?!v1\/|auth\/|webhooks\/|docs|healthz|readyz|debug).*/, (req, res, next) => {
+      if (!req.accepts('html')) return next();
+      return res.sendFile(path.join(webDist, 'index.html'));
+    });
+  }
+
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

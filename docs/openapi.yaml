@@ -270,6 +270,14 @@ paths:
         - Users
       summary: Get a patient with activity counts
       operationId: get_v1_users_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       security:
         - sessionCookie: []
         - bearerAuth: []
@@ -313,6 +321,14 @@ paths:
         - Users
       summary: Update patient settings (context ON/OFF ablation toggle, assist mode)
       operationId: patch_v1_users_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       requestBody:
         required: true
         content:
@@ -386,6 +402,14 @@ paths:
         - Users
       summary: "Learned word map: substitutions and resolved utterances"
       operationId: get_v1_users_id_wordmap
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       security:
         - sessionCookie: []
         - bearerAuth: []
@@ -424,6 +448,14 @@ paths:
         - Users
       summary: "Caregiver insights: resolution rates and top substitutions"
       operationId: get_v1_users_id_insights
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       security:
         - sessionCookie: []
         - bearerAuth: []
@@ -637,6 +669,14 @@ paths:
         - Assist
       summary: Get a confirmation (state machine snapshot)
       operationId: get_v1_confirmations_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       security:
         - sessionCookie: []
         - bearerAuth: []
@@ -682,6 +722,14 @@ paths:
       summary: Answer yes/no to the current confirmation question
       description: "`yes` resolves with the current hypothesis; `no` advances to the next hypothesis, or ends with `assist.unresolved` after the last. Answering a non-PENDING confirmation is a no-op that returns its final state."
       operationId: post_v1_confirmations_id_answer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       requestBody:
         required: true
         content:
@@ -747,6 +795,14 @@ paths:
       summary: Stream a synthesized question/sentence (MP3)
       description: "Public: browser `<audio>` cannot send headers. Ids are unguessable UUIDs."
       operationId: get_v1_audio_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
       security: []
       responses:
         "200":
@@ -861,6 +917,10 @@ paths:
                     items:
                       type: object
                       properties:
+                        id:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
                         userId:
                           type: string
                           minLength: 1
@@ -941,6 +1001,14 @@ paths:
         - Runs
       summary: "Full trace of a run: steps, latencies, retrieval hits with scores"
       operationId: get_v1_runs_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
       security:
         - sessionCookie: []
         - bearerAuth: []
@@ -1218,6 +1286,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/segments:
+    get:
+      tags:
+        - Omi
+      summary: Transcript segments (recent, or by dedupe key for fact provenance)
+      operationId: get_v1_segments
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: ids
+          in: query
+          required: false
+          schema:
+            description: Comma-separated dedupe keys (max 50). Omit to list the most recent segments.
+            type: string
+            maxLength: 4000
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 50
+            type: integer
+            minimum: 1
+            maximum: 200
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Segments, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Segment"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /webhooks/omi/transcript:
     post:
       tags:
@@ -1393,6 +1530,10 @@ components:
       $id: "#/components/schemas/User"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         omiUid:
           type:
             - string
@@ -1431,6 +1572,10 @@ components:
       $id: "#/components/schemas/UserDetail"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         omiUid:
           type:
             - string
@@ -1514,6 +1659,10 @@ components:
       $id: "#/components/schemas/Confirmation"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         userId:
           type: string
           minLength: 1
@@ -1588,6 +1737,10 @@ components:
       $id: "#/components/schemas/Step"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         runId:
           type: string
           minLength: 1
@@ -1658,6 +1811,10 @@ components:
       $id: "#/components/schemas/Run"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         userId:
           type: string
           minLength: 1
@@ -1705,6 +1862,10 @@ components:
       $id: "#/components/schemas/WordMapEntry"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         userId:
           type: string
           minLength: 1
@@ -1740,6 +1901,10 @@ components:
       $id: "#/components/schemas/MemoryFact"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         userId:
           type: string
           minLength: 1
@@ -1795,6 +1960,10 @@ components:
           items:
             type: object
             properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 128
               displayName:
                 type: string
               contextEnabled:
@@ -1828,6 +1997,10 @@ components:
           items:
             type: object
             properties:
+              id:
+                type:
+                  - string
+                  - number
               fragment:
                 type: string
               resolvedSentence:
@@ -1928,6 +2101,10 @@ components:
       $id: "#/components/schemas/RunDetail"
       type: object
       properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
         userId:
           type: string
           minLength: 1
@@ -1967,6 +2144,10 @@ components:
         user:
           type: object
           properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 128
             displayName:
               type: string
             contextEnabled:
@@ -2155,6 +2336,49 @@ components:
         - redis
         - qdrant
         - lyzr
+      additionalProperties: false
+    Segment:
+      $id: "#/components/schemas/Segment"
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        dedupeKey:
+          type: string
+          description: Matches `sourceSegmentIds` on memory facts
+        sessionId:
+          type: string
+        text:
+          type: string
+        speaker:
+          type:
+            - string
+            - "null"
+        isUser:
+          type: boolean
+        source:
+          type: string
+          enum:
+            - OMI_REALTIME
+            - OMI_MEMORY
+            - SIMULATED
+        kind:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - dedupeKey
+        - sessionId
+        - text
+        - speaker
+        - isUser
+        - source
+        - kind
+        - createdAt
       additionalProperties: false
   securitySchemes:
     sessionCookie:

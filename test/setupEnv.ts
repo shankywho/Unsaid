@@ -19,3 +19,4 @@ process.env.DEMO_EMAIL = 'demo@unsaid.test';
 process.env.DEMO_PASSWORD = 'demo-password-for-tests';
 process.env.SESSION_SECRET = 'test-session-secret-test-session-secret';
 process.env.RATE_LIMIT_ENABLED = 'false';
+process.env.WEB_DIST = 'off';

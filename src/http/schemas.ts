@@ -323,3 +323,36 @@ export const ReadinessSchema = z
     lyzr: z.string().meta({ example: 'configured' }),
   })
   .meta({ id: 'Readiness' });
+
+// ---------- segments (transcript + provenance) ----------
+export const SegmentSchema = z
+  .object({
+    id,
+    dedupeKey: z.string().meta({ description: 'Matches `sourceSegmentIds` on memory facts' }),
+    sessionId: z.string(),
+    text: z.string(),
+    speaker: z.string().nullable(),
+    isUser: z.boolean(),
+    source: z.enum(['OMI_REALTIME', 'OMI_MEMORY', 'SIMULATED']),
+    kind: z.string(),
+    createdAt: iso,
+  })
+  .meta({ id: 'Segment' });
+export const SegmentsQuery = z.object({
+  userId: id,
+  ids: z
+    .string()
+    .max(4000)
+    .optional()
+    .transform((v) =>
+      v
+        ? v
+            .split(',')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .slice(0, 50)
+        : undefined,
+    )
+    .meta({ description: 'Comma-separated dedupe keys (max 50). Omit to list the most recent segments.' }),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});

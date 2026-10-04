@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { env } from '../../config/env';
-import { OmiStatusQuery } from '../schemas';
+import { OmiStatusQuery, SegmentsQuery } from '../schemas';
 
 export const omiRouter = Router();
 
@@ -52,6 +52,37 @@ omiRouter.get('/omi/status', async (req, res, next) => {
         webhookSecretConfigured: Boolean(env.OMI_WEBHOOK_SECRET),
       },
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * Transcript for the console: most recent segments (oldest first), or specific segments by dedupe key
+ * (memory-fact provenance). Raw ambient segments are deleted after the retention window, so a requested key may be absent.
+ */
+omiRouter.get('/segments', async (req, res, next) => {
+  try {
+    const { userId, ids, limit } = SegmentsQuery.parse(req.query);
+    const rows = await prisma.transcriptSegment.findMany({
+      where: { userId, ...(ids ? { dedupeKey: { in: ids } } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: ids ? ids.length : limit,
+      select: {
+        id: true,
+        dedupeKey: true,
+        sessionId: true,
+        text: true,
+        speaker: true,
+        isUser: true,
+        source: true,
+        kind: true,
+        createdAt: true,
+      },
+    });
+    return res
+      .status(200)
+      .json({ ok: true, data: rows.reverse().map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })) });
   } catch (err) {
     return next(err);
   }

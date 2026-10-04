@@ -302,6 +302,18 @@ export const ROUTES: RouteDoc[] = [
     responses: { 200: { description: 'Status', schema: ok(S.OmiStatusSchema) }, ...errs(400, 401, 429) },
   },
   {
+    method: 'get',
+    path: '/v1/segments',
+    tag: 'Omi',
+    summary: 'Transcript segments (recent, or by dedupe key for fact provenance)',
+    auth: 'auth',
+    query: S.SegmentsQuery,
+    responses: {
+      200: { description: 'Segments, oldest first', schema: ok(z.array(S.SegmentSchema)) },
+      ...errs(400, 401, 429),
+    },
+  },
+  {
     method: 'post',
     path: '/webhooks/omi/transcript',
     tag: 'Webhooks',
@@ -340,7 +352,9 @@ function clean(node: unknown): unknown {
     const o = node as Json;
     const out: Json = {};
     for (const [k, v] of Object.entries(o)) {
-      if (k === '$schema' || k === '$defs' || k === 'id') continue;
+      if (k === '$schema' || k === '$defs') continue;
+      // zod's registry `id` (a string) is not JSON Schema; a property NAMED id holds an object and must stay
+      if (k === 'id' && typeof v === 'string') continue;
       if (k === 'pattern' && o.format === 'date-time') continue;
       if (
         (k === 'minimum' || k === 'maximum') &&
