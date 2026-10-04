@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test('landing has no horizontal overflow at 375px and every section is visible without scrolling into view', async ({ page }) => {
+test('landing has no horizontal overflow at 375px and every section is visible without scrolling into view', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
   // no scroll-triggered reveal: every heading is already visible in the DOM and not transparent
@@ -25,7 +27,9 @@ test('landing has no horizontal overflow at 375px and every section is visible w
     });
     expect(opacity).toBe(1);
   }
-  await expect(page.getByRole('heading', { name: /context-dependent fragments resolved within 3 yes\/no questions/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /context-dependent fragments resolved within 3 yes\/no questions/ }),
+  ).toBeVisible();
 });
 
 test('hero shows the confirmed frame by default and under reduced motion', async ({ page }) => {

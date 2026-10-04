@@ -139,7 +139,10 @@ test('runs: trace detail shows steps with sponsor tags and a shared timeline', a
   await seedPatient(request);
   await login(page);
   await page.getByRole('link', { name: 'Runs' }).click();
-  await page.getByRole('link', { name: /ASSIST/ }).first().click();
+  await page
+    .getByRole('link', { name: /ASSIST/ })
+    .first()
+    .click();
   await expect(page.getByRole('list', { name: 'Reasoning steps' })).toBeVisible();
   await expect(page.getByText(/qdrant · /).first()).toBeVisible();
   await expect(page.getByText(/lyzr · /).first()).toBeVisible();
@@ -149,12 +152,20 @@ test('empty, loading and error states for Memory', async ({ page, request }) => 
   await seedPatient(request);
   await login(page);
   // error: the API fails; the screen explains and offers a retry
-  await page.route('**/v1/memory?*', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { code: 'server_error', message: 'boom', requestId: 'r1' } }) }));
+  await page.route('**/v1/memory?*', (r) =>
+    r.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { code: 'server_error', message: 'boom', requestId: 'r1' } }),
+    }),
+  );
   await page.getByRole('link', { name: 'Memory' }).click();
   await expect(page.getByRole('alert')).toContainText('Couldn’t load memory');
   await page.unroute('**/v1/memory?*');
   // empty: no facts
-  await page.route('**/v1/memory?*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [] }) }));
+  await page.route('**/v1/memory?*', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [] }) }),
+  );
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByText('Nothing remembered yet')).toBeVisible();
   await page.unroute('**/v1/memory?*');

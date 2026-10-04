@@ -84,10 +84,12 @@ export function Live() {
 
   useEffect(() => {
     if (!conf) return;
-    if (conf.status === 'pending') setAnnounce(`Question ${conf.index + 1} of ${conf.count}: ${conf.question}`);
+    if (conf.status === 'pending')
+      setAnnounce(`Question ${conf.index + 1} of ${conf.count}: ${conf.question}`);
     else if (conf.status === 'resolved') setAnnounce(`Confirmed. ${conf.finalSentence}`);
     else if (conf.status === 'unresolved') setAnnounce('None of the three meanings fit. Nothing was spoken.');
-    else if (conf.status === 'expired') setAnnounce('The question closed without an answer. Nothing was spoken.');
+    else if (conf.status === 'expired')
+      setAnnounce('The question closed without an answer. Nothing was spoken.');
   }, [conf?.id, conf?.status, conf?.index, conf?.question, conf?.finalSentence]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const respond = useCallback(
@@ -102,7 +104,12 @@ export function Live() {
     const h = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement;
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
+      if (
+        el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable
+      )
         return;
       if (e.key === 'y' || e.key === 'Y') respond('yes');
       if (e.key === 'n' || e.key === 'N') respond('no');
@@ -143,7 +150,12 @@ export function Live() {
         autoComplete="off"
         className={cn(inputClass, 'mono flex-1 text-[13px]')}
       />
-      <Button type="submit" disabled={!text.trim() || sim.isPending} aria-label="Send fragment" className="w-9 px-0">
+      <Button
+        type="submit"
+        disabled={!text.trim() || sim.isPending}
+        aria-label="Send fragment"
+        className="w-9 px-0"
+      >
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Button>
     </form>
@@ -162,13 +174,23 @@ export function Live() {
       >
         <Column
           title="Conversation"
-          meta={<span className="mono text-[12px] text-faint">{state.fragment ? patient.displayName.split(' ')[0] : '—'}</span>}
+          meta={
+            <span className="mono text-[12px] text-faint">
+              {state.fragment ? patient.displayName.split(' ')[0] : '—'}
+            </span>
+          }
           className="order-first lg:order-last"
         >
           {sim.isError && (
-            <ErrorState title="Could not send that fragment" detail={errMessage(sim.error)} fix="Check the connection and try again." />
+            <ErrorState
+              title="Could not send that fragment"
+              detail={errMessage(sim.error)}
+              fix="Check the connection and try again."
+            />
           )}
-          {answer.isError && <ErrorState title="Could not send that answer" detail={errMessage(answer.error)} />}
+          {answer.isError && (
+            <ErrorState title="Could not send that answer" detail={errMessage(answer.error)} />
+          )}
           <ConversationPanel
             conf={conf}
             fragment={state.fragment}
@@ -197,7 +219,13 @@ export function Live() {
           title="Reasoning"
           meta={
             <span className={cn('mono text-[12px]', state.thinking ? 'text-accent' : 'text-faint')}>
-              {idle ? 'idle' : state.thinking && total === undefined ? 'running' : total !== undefined ? fmtMs(total) : ''}
+              {idle
+                ? 'idle'
+                : state.thinking && total === undefined
+                  ? 'running'
+                  : total !== undefined
+                    ? fmtMs(total)
+                    : ''}
             </span>
           }
         >
@@ -212,7 +240,9 @@ export function Live() {
             highlightId={highlight}
             onHighlight={setHighlight}
           />
-          {idle && <p className="mt-3 text-[13px] text-faint">Steps appear here as soon as a fragment is heard.</p>}
+          {idle && (
+            <p className="mt-3 text-[13px] text-faint">Steps appear here as soon as a fragment is heard.</p>
+          )}
         </Column>
       </div>
     </div>

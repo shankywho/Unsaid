@@ -214,9 +214,9 @@ cd web && pnpm e2e                      # Playwright against a MOCK_EXTERNALS ba
 
 | Landing (resolved frame of the live product demo)  | Live console, after a confirmed sentence                    |
 | -------------------------------------------------- | ----------------------------------------------------------- |
-| ![Landing page](docs/screenshots/landing-hero.png) | ![Live console](docs/screenshots/console-live-resolved.png) |
+| ![Landing page](docs/screenshots/landing-desktop.png) | ![Live console](docs/screenshots/live-confirmed.png) |
 
-More: [question state](docs/screenshots/console-live-question.png) · [full landing page](docs/screenshots/landing-full.png) · [375px mobile](docs/screenshots/landing-mobile-features.png).
+More: [idle](docs/screenshots/live-idle.png) · [reasoning](docs/screenshots/live-reasoning.png) · [question](docs/screenshots/live-question.png) · [375px mobile](docs/screenshots/landing-mobile.png) · [built vs design-ref](docs/screenshots/compare/).
 Design system and every component: `/app/_kitchen`. Lighthouse on `/` (mobile, throttled): performance 99, accessibility 100, best practices 100.
 The landing demo is scripted (labelled as such) but renders the same components as the console; its timings are the medians from the latest live eval.
 

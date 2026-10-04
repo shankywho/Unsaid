@@ -11,7 +11,10 @@ type Mode = 'AUTO' | 'ON' | 'OFF';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section aria-labelledby={id} className="grid gap-4 border-t border-line py-7 md:grid-cols-[240px_1fr] md:gap-10">
+    <section
+      aria-labelledby={id}
+      className="grid gap-4 border-t border-line py-7 md:grid-cols-[240px_1fr] md:gap-10"
+    >
       <h2 id={id} className="text-[15px] font-semibold tracking-[-0.02em]">
         {title}
       </h2>
@@ -51,7 +54,9 @@ export function Settings() {
           ]}
         />
         {setMode.isError && <ErrorState title="Could not save" detail={errMessage(setMode.error)} />}
-        <p className="mt-3 text-faint">The Memory switch in the top bar turns personal memory on or off for the next fragment.</p>
+        <p className="mt-3 text-faint">
+          The Memory switch in the top bar turns personal memory on or off for the next fragment.
+        </p>
       </Section>
 
       <Section id="omi" title="Omi connection">
@@ -60,7 +65,8 @@ export function Settings() {
         ) : omi.data ? (
           <div className="space-y-1.5">
             <p>
-              Last segment: <Mono>{omi.data.lastSegmentAt ? fmtTime(omi.data.lastSegmentAt) : 'none yet'}</Mono>{' '}
+              Last segment:{' '}
+              <Mono>{omi.data.lastSegmentAt ? fmtTime(omi.data.lastSegmentAt) : 'none yet'}</Mono>{' '}
               {omi.data.lastSegmentSource && (
                 <Tag>
                   {omi.data.lastSegmentSource === 'OMI_REALTIME'
@@ -72,7 +78,8 @@ export function Settings() {
               )}
             </p>
             <p className="text-muted">
-              Last 5 minutes: {omi.data.segmentsLast5Min.OMI_REALTIME} from Omi, {omi.data.segmentsLast5Min.SIMULATED} simulated.
+              Last 5 minutes: {omi.data.segmentsLast5Min.OMI_REALTIME} from Omi,{' '}
+              {omi.data.segmentsLast5Min.SIMULATED} simulated.
             </p>
             <p className="text-muted">
               Webhook secret {omi.data.webhookSecretConfigured ? 'is set.' : 'is not set (development only).'}
@@ -101,7 +108,10 @@ export function Settings() {
             ))}
           </dl>
         ) : (
-          <ErrorState title="Could not load insights" detail={insights.error ? errMessage(insights.error) : undefined} />
+          <ErrorState
+            title="Could not load insights"
+            detail={insights.error ? errMessage(insights.error) : undefined}
+          />
         )}
       </Section>
 
@@ -116,7 +126,10 @@ export function Settings() {
             ) : (
               'with the API key'
             )}
-            .{p.type === 'session' && <span className="text-muted"> Session ends {fmtTime(p.expiresAt)}.</span>}
+            .
+            {p.type === 'session' && (
+              <span className="text-muted"> Session ends {fmtTime(p.expiresAt)}.</span>
+            )}
           </p>
         ) : (
           <Skeleton className="h-6" />

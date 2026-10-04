@@ -57,12 +57,18 @@ export function TranscriptFeed({ feed, patientName }: { feed: FeedItem[]; patien
     <div role="log" aria-label="Transcript">
       {feed.map((f) =>
         f.kind === 'note' ? (
-          <Reveal key={f.id} className="grid grid-cols-[54px_1fr] gap-3 border-t border-line py-2.5 first:border-t-0">
+          <Reveal
+            key={f.id}
+            className="grid grid-cols-[54px_1fr] gap-3 border-t border-line py-2.5 first:border-t-0"
+          >
             <span className="mono pt-0.5 text-[11px] text-faint">{clock(f.ts)}</span>
             <p className="mono text-[12px] leading-5 text-faint">{f.text}</p>
           </Reveal>
         ) : (
-          <Reveal key={f.id} className="grid grid-cols-[54px_1fr] gap-3 border-t border-line py-3 first:border-t-0">
+          <Reveal
+            key={f.id}
+            className="grid grid-cols-[54px_1fr] gap-3 border-t border-line py-3 first:border-t-0"
+          >
             <span className="mono pt-0.5 text-[11px] text-faint">{clock(f.ts)}</span>
             <div>
               <p className="mb-0.5 flex items-center gap-2 text-[12px] text-muted">
@@ -229,7 +235,8 @@ type RowStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped';
 
 function Dot({ status }: { status: RowStatus }) {
   const base = 'h-2 w-2 rounded-full';
-  if (status === 'running') return <i className={cn(base, 'pulse bg-accent shadow-[0_0_0_4px_var(--color-accent-soft)]')} />;
+  if (status === 'running')
+    return <i className={cn(base, 'pulse bg-accent shadow-[0_0_0_4px_var(--color-accent-soft)]')} />;
   if (status === 'pending') return <i className={cn(base, 'border-[1.5px] border-ghost')} />;
   if (status === 'failed') return <i className={cn(base, 'bg-danger')} />;
   if (status === 'skipped') return <i className={cn(base, 'border-[1.5px] border-faint')} />;
@@ -260,7 +267,11 @@ function StepRow({
   const service = step?.service ?? FALLBACK_SERVICE[node];
   const label = nodeLabel(node);
   return (
-    <li className="tl-row relative grid grid-cols-[20px_1fr_auto] items-start gap-x-2.5 py-2.5" data-node={node} data-status={status}>
+    <li
+      className="tl-row relative grid grid-cols-[20px_1fr_auto] items-start gap-x-2.5 py-2.5"
+      data-node={node}
+      data-status={status}
+    >
       <span className="flex h-[22px] items-center justify-center" aria-hidden="true">
         <Dot status={status} />
       </span>
@@ -278,12 +289,20 @@ function StepRow({
             >
               {label}
               <ChevronRight
-                className={cn('h-3.5 w-3.5 text-faint transition-transform duration-150', open && 'rotate-90')}
+                className={cn(
+                  'h-3.5 w-3.5 text-faint transition-transform duration-150',
+                  open && 'rotate-90',
+                )}
                 aria-hidden="true"
               />
             </button>
           ) : (
-            <span className={cn('text-[14px] font-medium leading-[22px]', status === 'pending' ? 'text-faint' : 'text-ink')}>
+            <span
+              className={cn(
+                'text-[14px] font-medium leading-[22px]',
+                status === 'pending' ? 'text-faint' : 'text-ink',
+              )}
+            >
               {label}
             </span>
           )}
@@ -300,7 +319,12 @@ function StepRow({
         )}
         {open && detail && <div className="mt-2">{detail}</div>}
       </div>
-      <span className={cn('mono text-[12px] leading-[22px] tabular-nums', status === 'running' ? 'text-accent' : 'text-muted')}>
+      <span
+        className={cn(
+          'mono text-[12px] leading-[22px] tabular-nums',
+          status === 'running' ? 'text-accent' : 'text-muted',
+        )}
+      >
         {right ?? (step?.latencyMs !== undefined ? fmtMs(step.latencyMs) : '')}
       </span>
     </li>
@@ -321,7 +345,9 @@ export function LearnFollowUp({ learn }: { learn?: LearnView }) {
       data-testid="learn-followup"
     >
       <span aria-hidden="true">→</span>
-      {learn.status === 'running' && <i className="pulse h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />}
+      {learn.status === 'running' && (
+        <i className="pulse h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+      )}
       {text}
     </p>
   );
@@ -351,7 +377,10 @@ export function ReasoningTimeline({
   ghost?: boolean;
 }) {
   // raw-memory and word-map hits start collapsed; the matched facts and the ranked meanings start open
-  const [closed, setClosed] = useState<Record<string, boolean>>({ retrieve_raw_memory: true, retrieve_wordmap: true });
+  const [closed, setClosed] = useState<Record<string, boolean>>({
+    retrieve_raw_memory: true,
+    retrieve_wordmap: true,
+  });
   const by = new Map(steps.map((s) => [s.node, s]));
   const idle = steps.length === 0 && !thinking;
   const parallel = PARALLEL.map((id) => by.get(id)).filter((s): s is StepView => !!s);
@@ -376,7 +405,10 @@ export function ReasoningTimeline({
     if (s?.status === 'failed') return s.error ?? 'This step failed';
     if (id === 'classify' && classified) return `${classified.kind.toLowerCase()} · ${classified.reason}`;
     if (id === 'hypothesize' && hyps.length) return `${hyps.length} possible meanings`;
-    if ((id === 'retrieve_memory' || id === 'retrieve_raw_memory' || id === 'retrieve_wordmap') && s?.retrieval)
+    if (
+      (id === 'retrieve_memory' || id === 'retrieve_raw_memory' || id === 'retrieve_wordmap') &&
+      s?.retrieval
+    )
       return `${s.retrieval.length} ${s.retrieval.length === 1 ? 'hit' : 'hits'}`;
     if (id === 'await_confirmation' && conf)
       return conf.status === 'pending'
@@ -396,12 +428,21 @@ export function ReasoningTimeline({
   const detailOf = (id: string): React.ReactNode => {
     const s = by.get(id);
     if (s?.status === 'skipped') return null;
-    if ((id === 'retrieve_memory' || id === 'retrieve_raw_memory' || id === 'retrieve_wordmap') && s?.retrieval) {
+    if (
+      (id === 'retrieve_memory' || id === 'retrieve_raw_memory' || id === 'retrieve_wordmap') &&
+      s?.retrieval
+    ) {
       if (s.retrieval.length === 0) return <p className="text-[13px] text-faint">Nothing relevant found</p>;
       return (
         <ul>
           {s.retrieval.slice(0, 4).map((h, i) => (
-            <FactRow key={h.id} hit={h} index={i} highlighted={highlightId === h.id} onHighlight={onHighlight} />
+            <FactRow
+              key={h.id}
+              hit={h}
+              index={i}
+              highlighted={highlightId === h.id}
+              onHighlight={onHighlight}
+            />
           ))}
         </ul>
       );
@@ -453,12 +494,18 @@ export function ReasoningTimeline({
   return (
     <div data-idle={ghost || idle ? 'true' : undefined}>
       <ol aria-label="Reasoning steps" aria-busy={thinking}>
-        <li aria-hidden="true" className="mb-0.5 mt-1 flex items-center gap-2 text-[11px] font-medium text-faint">
+        <li
+          aria-hidden="true"
+          className="mb-0.5 mt-1 flex items-center gap-2 text-[11px] font-medium text-faint"
+        >
           In parallel
           <span className="h-px flex-1 bg-line" />
         </li>
         {PARALLEL.map((id) => row(id, true))}
-        <li aria-hidden="true" className="mb-0.5 mt-2 flex items-center gap-2 text-[11px] font-medium text-faint">
+        <li
+          aria-hidden="true"
+          className="mb-0.5 mt-2 flex items-center gap-2 text-[11px] font-medium text-faint"
+        >
           Then
           <span className="h-px flex-1 bg-line" />
         </li>
@@ -535,14 +582,14 @@ export function ConversationPanel({
   pressed?: 'yes' | 'no' | null;
   ellapsedHint?: string;
 }) {
-  const frag = fragment && (
-    <Fragment className="block pb-7 pt-1 text-[15px]">{fragment}</Fragment>
-  );
+  const frag = fragment && <Fragment className="block pb-7 pt-1 text-[15px]">{fragment}</Fragment>;
   if (!conf && !thinking) {
     return (
       <div className="pt-5" data-testid="conversation-idle">
         <p className="mono text-[13px] text-faint">Waiting for a fragment</p>
-        <p className="my-2 mb-6 text-[40px] font-medium leading-none tracking-[-0.04em] text-faint">Listening…</p>
+        <p className="my-2 mb-6 text-[40px] font-medium leading-none tracking-[-0.04em] text-faint">
+          Listening…
+        </p>
         <Waveform active={false} bars={30} />
         <p className="mt-5 max-w-[300px] text-[13px] leading-normal text-faint">
           When {patientName} says a few broken words, Unsaid asks one yes/no question here.
@@ -556,15 +603,23 @@ export function ConversationPanel({
         {frag}
         <div className="flex items-center gap-2.5">
           <i className="pulse h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
-          <span className="text-[20px] tracking-[-0.02em] text-ink">Working out what {patientName.split(' ')[0]} means</span>
+          <span className="text-[20px] tracking-[-0.02em] text-ink">
+            Working out what {patientName.split(' ')[0]} means
+          </span>
         </div>
-        <p className="mt-3 text-[13px] text-faint">{ellapsedHint ?? 'Memory is used when it is switched on.'}</p>
+        <p className="mt-3 text-[13px] text-faint">
+          {ellapsedHint ?? 'Memory is used when it is switched on.'}
+        </p>
       </div>
     );
   }
   if (conf.status === 'resolved') {
     return (
-      <Reveal data-testid="confirmed">
+      <Reveal data-testid="confirmed" className="relative">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-8 -top-4 h-[420px] bg-[radial-gradient(closest-side,rgba(94,234,212,0.14),transparent)]"
+        />
         {frag}
         <Resolved size="xl" glow>
           {conf.finalSentence}
@@ -588,7 +643,9 @@ export function ConversationPanel({
           Nothing was spoken. Ask in a different way, or try a more specific fragment.
         </p>
         {conf.fallbackQuestion && (
-          <p className="mt-5 border-t border-line pt-4 text-[20px] tracking-[-0.02em] text-ink">{conf.fallbackQuestion}</p>
+          <p className="mt-5 border-t border-line pt-4 text-[20px] tracking-[-0.02em] text-ink">
+            {conf.fallbackQuestion}
+          </p>
         )}
       </Reveal>
     );
@@ -617,7 +674,10 @@ export function ConversationPanel({
         </span>
         <span className="flex gap-1" aria-hidden="true">
           {Array.from({ length: conf.count }, (_, i) => (
-            <i key={i} className={cn('h-[3px] w-5 rounded-sm', i <= conf.index ? 'bg-accent' : 'bg-white/[0.12]')} />
+            <i
+              key={i}
+              className={cn('h-[3px] w-5 rounded-sm', i <= conf.index ? 'bg-accent' : 'bg-white/[0.12]')}
+            />
           ))}
         </span>
       </div>

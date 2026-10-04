@@ -7,7 +7,13 @@ export interface Service {
 
 /** Canonical ASSIST DAG. The first four start together; the rest follow in order. */
 export const PARALLEL = ['classify', 'fragment_analyze', 'retrieve_raw_memory', 'retrieve_wordmap'] as const;
-export const SEQUENTIAL = ['retrieve_memory', 'hypothesize', 'compose_question', 'tts_question', 'await_confirmation'] as const;
+export const SEQUENTIAL = [
+  'retrieve_memory',
+  'hypothesize',
+  'compose_question',
+  'tts_question',
+  'await_confirmation',
+] as const;
 export const NODES = [
   { id: 'classify', label: 'Classify', hint: 'Is this a fragment?' },
   { id: 'fragment_analyze', label: 'Analyze fragment', hint: 'Names, actions, negation' },

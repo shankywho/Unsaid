@@ -24,9 +24,18 @@ export function Runs() {
   const runs = useRuns(patient?.id);
   return (
     <div className="mx-auto max-w-[1100px] px-5 pb-12 sm:px-10">
-      <PageHeader title="Runs" sub="Each fragment, memory update and learning pass leaves a full trace you can open." />
+      <PageHeader
+        title="Runs"
+        sub="Each fragment, memory update and learning pass leaves a full trace you can open."
+      />
       {runs.isLoading && <SkeletonList label="Loading runs" />}
-      {runs.isError && <ErrorState title="Could not load runs" detail={errMessage(runs.error)} onRetry={() => runs.refetch()} />}
+      {runs.isError && (
+        <ErrorState
+          title="Could not load runs"
+          detail={errMessage(runs.error)}
+          onRetry={() => runs.refetch()}
+        />
+      )}
       {runs.isSuccess && runs.data.length === 0 && (
         <EmptyState
           title="No runs yet"
@@ -42,7 +51,11 @@ export function Runs() {
         {runs.data?.map((r) => {
           const input = (r.input ?? {}) as Record<string, unknown>;
           const label =
-            typeof input.text === 'string' ? input.text : typeof input.fragment === 'string' ? input.fragment : null;
+            typeof input.text === 'string'
+              ? input.text
+              : typeof input.fragment === 'string'
+                ? input.fragment
+                : null;
           return (
             <li key={r.id} className="border-t border-line first:border-t-0">
               <Link
@@ -56,7 +69,12 @@ export function Runs() {
                   <span className="text-[14px] text-muted">Household conversation</span>
                 )}
                 <span className="flex items-center gap-4">
-                  <span className={cn('hidden text-[13px] sm:inline', r.status === 'FAILED' ? 'text-danger' : 'text-muted')}>
+                  <span
+                    className={cn(
+                      'hidden text-[13px] sm:inline',
+                      r.status === 'FAILED' ? 'text-danger' : 'text-muted',
+                    )}
+                  >
                     {statusLabel(r.status)}
                   </span>
                   <Mono>{r._count.steps} steps</Mono>
@@ -87,7 +105,13 @@ export function RunPage() {
           <SkeletonList label="Loading trace" />
         </div>
       )}
-      {run.isError && <ErrorState title="Could not load this run" detail={errMessage(run.error)} onRetry={() => run.refetch()} />}
+      {run.isError && (
+        <ErrorState
+          title="Could not load this run"
+          detail={errMessage(run.error)}
+          onRetry={() => run.refetch()}
+        />
+      )}
       {run.data && view && (
         <>
           <header className="mt-5 flex flex-wrap items-start justify-between gap-6 pb-6">
@@ -125,10 +149,15 @@ export function RunPage() {
           ) : (
             <ol className="mt-1">
               {view.steps.map((s) => (
-                <li key={s.node} className="flex items-center justify-between gap-4 border-t border-line py-2.5 first:border-t-0">
+                <li
+                  key={s.node}
+                  className="flex items-center justify-between gap-4 border-t border-line py-2.5 first:border-t-0"
+                >
                   <span className="text-[14px] font-medium">{s.node}</span>
                   <span className="flex items-center gap-3">
-                    {s.service && <Tag>{`${s.service.provider} · ${s.service.name.replace(/^(test_)?unsaid_/, '')}`}</Tag>}
+                    {s.service && (
+                      <Tag>{`${s.service.provider} · ${s.service.name.replace(/^(test_)?unsaid_/, '')}`}</Tag>
+                    )}
                     <Mono>{s.latencyMs !== undefined ? fmtMs(s.latencyMs) : ''}</Mono>
                   </span>
                 </li>

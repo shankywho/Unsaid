@@ -113,7 +113,12 @@ export function BigRatio({
         )}
       >
         {hits}
-        <span className={cn('tracking-[-0.04em] text-faint', size === 'lg' ? 'text-[32px] sm:text-[44px]' : 'text-[28px]')}>
+        <span
+          className={cn(
+            'tracking-[-0.04em] text-faint',
+            size === 'lg' ? 'text-[32px] sm:text-[44px]' : 'text-[28px]',
+          )}
+        >
           {' '}
           of {total}
         </span>

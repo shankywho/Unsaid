@@ -67,7 +67,10 @@ export function Login() {
               className={inputClass}
             />
             {error && (
-              <p role="alert" className="mt-4 rounded-[8px] border border-danger-line bg-danger-soft px-3 py-2 text-[13px] text-danger">
+              <p
+                role="alert"
+                className="mt-4 rounded-[8px] border border-danger-line bg-danger-soft px-3 py-2 text-[13px] text-danger"
+              >
                 Could not log in. {error}
               </p>
             )}
@@ -76,7 +79,9 @@ export function Login() {
             </Button>
           </form>
         </div>
-        <p className="mt-6 text-center text-[12px] text-faint">Unsaid is a communication aid, not a medical device.</p>
+        <p className="mt-6 text-center text-[12px] text-faint">
+          Unsaid is a communication aid, not a medical device.
+        </p>
       </Reveal>
     </main>
   );

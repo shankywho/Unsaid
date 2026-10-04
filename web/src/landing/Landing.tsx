@@ -23,7 +23,10 @@ function Nav() {
         <a href="/" aria-label="Unsaid home">
           <Wordmark size={22} />
         </a>
-        <nav aria-label="Primary" className="hidden items-center gap-7 text-[14px] font-medium text-muted sm:flex">
+        <nav
+          aria-label="Primary"
+          className="hidden items-center gap-7 text-[14px] font-medium text-muted sm:flex"
+        >
           <a href="#how" className="hover:text-ink">
             How it works
           </a>
@@ -54,8 +57,8 @@ function Hero() {
           Finishing the sentences aphasia takes away.
         </h1>
         <p className="mx-auto mt-6 max-w-[600px] text-[17px] leading-normal text-muted sm:text-[19px]">
-          Unsaid turns a few broken words into the sentence a stroke survivor meant. They confirm it with a yes, and it
-          is spoken aloud.
+          Unsaid turns a few broken words into the sentence a stroke survivor meant. They confirm it with a
+          yes, and it is spoken aloud.
         </p>
         <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
           <a href="#demo">
@@ -66,7 +69,11 @@ function Hero() {
           <a href={GITHUB_URL}>
             <Button size="lg" variant="ghost" className="w-full">
               <Star className="h-4 w-4" aria-hidden="true" /> View on GitHub
-              {stars && <span className="mono border-l border-line-strong pl-2.5 text-[12px] text-muted">{stars}</span>}
+              {stars && (
+                <span className="mono border-l border-line-strong pl-2.5 text-[12px] text-muted">
+                  {stars}
+                </span>
+              )}
             </Button>
           </a>
         </div>
@@ -121,7 +128,14 @@ const STEPS: Array<{ id: string; title: string; body: string; crop: React.ReactN
           patientName={DEMO_PATIENT}
           feed={[
             ...AMBIENT,
-            { kind: 'segment', id: 'p', text: FRAG, isUser: true, source: 'OMI_REALTIME', ts: '2026-10-04T10:39:26' },
+            {
+              kind: 'segment',
+              id: 'p',
+              text: FRAG,
+              isUser: true,
+              source: 'OMI_REALTIME',
+              ts: '2026-10-04T10:39:26',
+            },
           ]}
         />
       </Crop>
@@ -209,13 +223,18 @@ function How() {
       <h2 className={cn(H2, 'max-w-[720px]')}>From overheard context to a spoken sentence.</h2>
       <div className="mt-10 sm:mt-14">
         {STEPS.map((s, i) => (
-          <div key={s.id} className="grid items-center gap-6 border-t border-line py-10 sm:gap-20 sm:py-14 lg:grid-cols-2">
+          <div
+            key={s.id}
+            className="grid items-center gap-6 border-t border-line py-10 sm:gap-20 sm:py-14 lg:grid-cols-2"
+          >
             <div className={cn(i % 2 === 1 && 'lg:order-2')}>
               <p className="mono mb-3.5 text-[12px] text-faint">
                 {i + 1} / {STEPS.length}
               </p>
               <h3 className={cn(H2, 'text-[26px] sm:text-[32px]')}>{s.title}</h3>
-              <p className="mt-3 max-w-[420px] text-[16px] leading-relaxed text-muted sm:text-[17px]">{s.body}</p>
+              <p className="mt-3 max-w-[420px] text-[16px] leading-relaxed text-muted sm:text-[17px]">
+                {s.body}
+              </p>
             </div>
             <div className="min-w-0">{s.crop}</div>
           </div>
@@ -277,17 +296,20 @@ function Results() {
     <section id="results" className={cn(wrap, 'mt-24 scroll-mt-16 sm:mt-36')}>
       <p className="mb-3 text-[13px] font-medium text-muted">Results</p>
       <h2 className={cn(H2, 'max-w-[900px]')}>
-        {facts.onHits} of {facts.ctxTotal} context-dependent fragments resolved within 3 yes/no questions with memory, vs{' '}
-        {facts.offHits} of {facts.ctxTotal} without.
+        {facts.onHits} of {facts.ctxTotal} context-dependent fragments resolved within 3 yes/no questions with
+        memory, vs {facts.offHits} of {facts.ctxTotal} without.
       </h2>
       <div className="mt-12 grid gap-10 sm:grid-cols-2 sm:gap-16">
         <BigRatio label="With memory" hits={facts.onHits} total={facts.ctxTotal} strong />
         <BigRatio label="Without memory" hits={facts.offHits} total={facts.ctxTotal} />
       </div>
       <p className="mt-12 max-w-[760px] text-[13px] leading-relaxed text-faint">
-        Synthetic test set, n={facts.n} ({facts.ctxTotal} context-dependent, {facts.noCtxTotal} context-free), judged by
-        the {facts.judge}. {facts.model}, run {facts.date}. {facts.firstQuestionNote}{' '}
-        <a href={`${GITHUB_URL}/tree/main/eval-results`} className="text-ink underline underline-offset-[3px]">
+        Synthetic test set, n={facts.n} ({facts.ctxTotal} context-dependent, {facts.noCtxTotal} context-free),
+        judged by the {facts.judge}. {facts.model}, run {facts.date}. {facts.firstQuestionNote}{' '}
+        <a
+          href={`${GITHUB_URL}/tree/main/eval-results`}
+          className="text-ink underline underline-offset-[3px]"
+        >
           Read the full evaluation
         </a>
         {!facts.live && ' (mock run: smoke test only)'}
@@ -351,12 +373,18 @@ const FAQ: Array<[string, string]> = [
     'Can the memory be deleted?',
     'Yes. Delete any single fact, purge everything for a person with a typed confirmation, or switch Memory off so Unsaid answers without it.',
   ],
-  ['Is it open source?', 'Yes. The code is MIT licensed on GitHub, including the eval that produced the numbers on this page.'],
+  [
+    'Is it open source?',
+    'Yes. The code is MIT licensed on GitHub, including the eval that produced the numbers on this page.',
+  ],
 ];
 
 function Faq() {
   return (
-    <section id="faq" className={cn(wrap, 'mt-24 grid scroll-mt-16 gap-10 sm:mt-36 lg:grid-cols-[360px_1fr] lg:gap-20')}>
+    <section
+      id="faq"
+      className={cn(wrap, 'mt-24 grid scroll-mt-16 gap-10 sm:mt-36 lg:grid-cols-[360px_1fr] lg:gap-20')}
+    >
       <div>
         <p className="mb-3 text-[13px] font-medium text-muted">FAQ</p>
         <h2 className={cn(H2, 'sm:text-[40px]')}>Questions, answered plainly.</h2>
@@ -386,8 +414,8 @@ function Footer() {
         <div className="max-w-[420px]">
           <Wordmark size={20} />
           <p className="mt-4 text-[13px] leading-relaxed text-faint">
-            Unsaid is a communication aid, not a medical device. It only listens through a device its user has chosen to
-            wear, and everyone nearby should know.
+            Unsaid is a communication aid, not a medical device. It only listens through a device its user has
+            chosen to wear, and everyone nearby should know.
           </p>
         </div>
         <nav aria-label="Footer" className="flex gap-7 text-[14px] text-muted">

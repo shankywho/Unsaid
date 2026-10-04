@@ -2,14 +2,20 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 import type { EventEnvelope } from '../api/client';
 import evalReport from '../generated/eval.json';
 import persona from '../generated/persona.json';
-import { initialLive, liveReducer, type FeedItem, type LiveAction, type LiveState } from '../console/liveState';
+import {
+  initialLive,
+  liveReducer,
+  type FeedItem,
+  type LiveAction,
+  type LiveState,
+} from '../console/liveState';
 
 /** The seeded demo patient, read from the persona fixture at build time. */
 export const DEMO_PATIENT: string = persona.patientName;
 
-const stats = (evalReport as { results: Array<{ mode: string; stepStats: Record<string, { p50Ms: number }> }> }).results.find(
-  (r) => r.mode === 'context ON',
-)!.stepStats;
+const stats = (
+  evalReport as { results: Array<{ mode: string; stepStats: Record<string, { p50Ms: number }> }> }
+).results.find((r) => r.mode === 'context ON')!.stepStats;
 const p50 = (n: string) => stats[n]?.p50Ms ?? 0;
 
 const RUN = 'demo-run';
@@ -23,14 +29,43 @@ const ev = (
 });
 
 export const AMBIENT: FeedItem[] = [
-  { kind: 'segment', id: 'a1', text: 'The bakery lady called. I will bake on Saturday as usual.', speaker: 'Sunita', isUser: false, source: 'OMI_REALTIME', ts: '2026-10-04T10:38:41' },
-  { kind: 'segment', id: 'a2', text: 'Should I bring something on Sunday? I can stop at the market.', speaker: 'Priya', isUser: false, source: 'OMI_REALTIME', ts: '2026-10-04T10:38:55' },
-  { kind: 'segment', id: 'a3', text: 'Ask your father. He has opinions.', speaker: 'Sunita', isUser: false, source: 'OMI_REALTIME', ts: '2026-10-04T10:39:10' },
+  {
+    kind: 'segment',
+    id: 'a1',
+    text: 'The bakery lady called. I will bake on Saturday as usual.',
+    speaker: 'Sunita',
+    isUser: false,
+    source: 'OMI_REALTIME',
+    ts: '2026-10-04T10:38:41',
+  },
+  {
+    kind: 'segment',
+    id: 'a2',
+    text: 'Should I bring something on Sunday? I can stop at the market.',
+    speaker: 'Priya',
+    isUser: false,
+    source: 'OMI_REALTIME',
+    ts: '2026-10-04T10:38:55',
+  },
+  {
+    kind: 'segment',
+    id: 'a3',
+    text: 'Ask your father. He has opinions.',
+    speaker: 'Sunita',
+    isUser: false,
+    source: 'OMI_REALTIME',
+    ts: '2026-10-04T10:39:10',
+  },
 ];
 
 export const HITS = [
   { id: 'f1', type: 'event', text: 'Priya (daughter) is visiting on Sunday morning from Pune', score: 0.71 },
-  { id: 'f2', type: 'health_instruction', text: 'Dr. Mehta said Papa must strictly avoid sugar, sweets and pastries', score: 0.64 },
+  {
+    id: 'f2',
+    type: 'health_instruction',
+    text: 'Dr. Mehta said Papa must strictly avoid sugar, sweets and pastries',
+    score: 0.64,
+  },
   { id: 'f3', type: 'routine', text: 'Sunita bakes on Saturdays', score: 0.38 },
 ];
 const SVC = {
@@ -51,7 +86,13 @@ const SVC = {
  */
 const T0 = 700; // ms between the fragment and run.started
 const par = ['classify', 'fragment_analyze', 'retrieve_raw_memory', 'retrieve_wordmap'] as const;
-const seq = ['retrieve_memory', 'hypothesize', 'compose_question', 'tts_question', 'await_confirmation'] as const;
+const seq = [
+  'retrieve_memory',
+  'hypothesize',
+  'compose_question',
+  'tts_question',
+  'await_confirmation',
+] as const;
 const offsets: Record<string, number> = {};
 let cursor = Math.max(...par.map((n) => p50(n)));
 for (const n of par) offsets[n] = 0;
@@ -110,11 +151,26 @@ export const LOOP_MS = RESOLVED_AT + 5200;
 
 export const SCRIPT: Array<[number, LiveAction]> = [
   [0, { type: 'seed_feed', items: AMBIENT }],
-  [200, { type: 'local_fragment', text: 'Sunday… Priya… cake… no', id: 'demo-seg', ts: '2026-10-04T10:39:26' }],
+  [
+    200,
+    { type: 'local_fragment', text: 'Sunday… Priya… cake… no', id: 'demo-seg', ts: '2026-10-04T10:39:26' },
+  ],
   [T0, ev('run.started', { pipeline: 'ASSIST', contextUsed: true })],
   ...par.map(stepStart),
-  [at('classify', true), ev('segment.classified', { kind: 'FRAGMENT', reason: 'telegraphic speech with a negation', source: 'agent' })],
-  ...par.map((n) => stepDone(n, n === 'retrieve_raw_memory' ? { retrieval: HITS } : n === 'retrieve_wordmap' ? { retrieval: [] } : {})),
+  [
+    at('classify', true),
+    ev('segment.classified', {
+      kind: 'FRAGMENT',
+      reason: 'telegraphic speech with a negation',
+      source: 'agent',
+    }),
+  ],
+  ...par.map((n) =>
+    stepDone(
+      n,
+      n === 'retrieve_raw_memory' ? { retrieval: HITS } : n === 'retrieve_wordmap' ? { retrieval: [] } : {},
+    ),
+  ),
   stepStart('retrieve_memory'),
   stepDone('retrieve_memory', { retrieval: HITS }),
   stepStart('hypothesize'),
@@ -137,7 +193,10 @@ export const SCRIPT: Array<[number, LiveAction]> = [
   stepDone('await_confirmation'),
   [RESOLVED_AT, ev('assist.resolved', { confirmationId: 'demo-conf', finalSentence: HYPS[0].sentence })],
   [RESOLVED_AT + 300, ev('run.started', { pipeline: 'LEARN', contextUsed: false }, 'demo-learn')],
-  [RESOLVED_AT + 900, ev('wordmap.updated', { fragment: 'Sunday… Priya… cake… no', summary: 'word map updated' }, 'demo-learn')],
+  [
+    RESOLVED_AT + 900,
+    ev('wordmap.updated', { fragment: 'Sunday… Priya… cake… no', summary: 'word map updated' }, 'demo-learn'),
+  ],
 ];
 
 /** Final frame: shown on first paint and to anyone who prefers reduced motion. */
@@ -154,7 +213,11 @@ export function useScriptedDemo(): { state: LiveState; pressed: boolean } {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+    if (
+      typeof window === 'undefined' ||
+      !window.matchMedia('(prefers-reduced-motion: no-preference)').matches
+    )
+      return;
     const clear = () => timers.current.forEach(clearTimeout);
     const run = () => {
       dispatch({ type: 'reset' });

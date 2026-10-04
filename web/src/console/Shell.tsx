@@ -60,7 +60,10 @@ export function OmiBadge({ userId }: { userId?: string }) {
   }
   return (
     <Chip tone={tone === 'live' ? 'live' : tone === 'off' ? 'danger' : 'neutral'} className="shrink-0">
-      <StatusDot tone={tone === 'live' ? 'live' : tone === 'sim' ? 'sim' : 'danger'} pulse={tone === 'live'} />
+      <StatusDot
+        tone={tone === 'live' ? 'live' : tone === 'sim' ? 'sim' : 'danger'}
+        pulse={tone === 'live'}
+      />
       <span>{label}</span>
       {data?.lastSegmentAt && !dropped && (
         <span className="mono hidden sm:inline">{ago(data.lastSegmentAt)}</span>
@@ -116,7 +119,11 @@ function Sidebar() {
     'flex h-[34px] shrink-0 items-center gap-2.5 rounded-[8px] px-2.5 text-[14px] font-medium md:justify-center xl:justify-start';
   return (
     <aside className="flex shrink-0 flex-col gap-2 border-b border-line md:w-14 md:gap-5 md:border-b-0 md:border-r md:px-2 md:py-4 xl:w-52 xl:px-3">
-      <Link to="/" aria-label="Unsaid home" className="flex h-9 items-center px-4 md:justify-center md:px-0 xl:justify-start xl:px-2">
+      <Link
+        to="/"
+        aria-label="Unsaid home"
+        className="flex h-9 items-center px-4 md:justify-center md:px-0 xl:justify-start xl:px-2"
+      >
         <span className="wm hidden text-[18px] text-ink md:inline xl:hidden" aria-hidden="true">
           U
         </span>
@@ -124,14 +131,20 @@ function Sidebar() {
           <Wordmark size={18} />
         </span>
       </Link>
-      <nav aria-label="Console" className="flex gap-0.5 overflow-x-auto px-3 pb-2 md:flex-1 md:flex-col md:overflow-visible md:px-0 md:pb-0">
+      <nav
+        aria-label="Console"
+        className="flex gap-0.5 overflow-x-auto px-3 pb-2 md:flex-1 md:flex-col md:overflow-visible md:px-0 md:pb-0"
+      >
         {NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             title={label}
             className={({ isActive }) =>
-              cn(item, isActive ? 'bg-white/[0.07] text-ink' : 'text-muted hover:bg-white/[0.04] hover:text-ink')
+              cn(
+                item,
+                isActive ? 'bg-white/[0.07] text-ink' : 'text-muted hover:bg-white/[0.04] hover:text-ink',
+              )
             }
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
@@ -200,7 +213,11 @@ export function Shell() {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col md:min-h-0">
           <TopBar />
-          <main id="main" tabIndex={0} className="min-h-0 min-w-0 flex-1 focus-visible:outline-offset-[-2px] md:overflow-y-auto">
+          <main
+            id="main"
+            tabIndex={0}
+            className="min-h-0 min-w-0 flex-1 focus-visible:outline-offset-[-2px] md:overflow-y-auto"
+          >
             <Outlet />
           </main>
         </div>

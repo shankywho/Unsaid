@@ -56,8 +56,14 @@ export function Memory() {
   const [purging, setPurging] = useState(false);
   const [typed, setTyped] = useState('');
 
-  const list = useMemo(() => (facts.data ?? []).map((f) => normalize(f as Record<string, unknown>)), [facts.data]);
-  const sourceIds = useMemo(() => [...new Set(list.flatMap((f) => f.sourceSegmentIds ?? []))].slice(0, 50), [list]);
+  const list = useMemo(
+    () => (facts.data ?? []).map((f) => normalize(f as Record<string, unknown>)),
+    [facts.data],
+  );
+  const sourceIds = useMemo(
+    () => [...new Set(list.flatMap((f) => f.sourceSegmentIds ?? []))].slice(0, 50),
+    [list],
+  );
   const sources = useSegmentsByKey(patient?.id, sourceIds);
   const byKey = useMemo(() => new Map((sources.data ?? []).map((s) => [s.dedupeKey, s])), [sources.data]);
 
@@ -85,7 +91,10 @@ export function Memory() {
               <label htmlFor="mq" className="sr-only">
                 Search memory
               </label>
-              <Search className="pointer-events-none absolute left-3 top-[10px] h-4 w-4 text-faint" aria-hidden="true" />
+              <Search
+                className="pointer-events-none absolute left-3 top-[10px] h-4 w-4 text-faint"
+                aria-hidden="true"
+              />
               <input
                 id="mq"
                 value={q}
@@ -154,7 +163,9 @@ export function Memory() {
                       </p>
                     )}
                   </div>
-                  <Mono className="hidden sm:block">{src ? (SOURCE_LABEL[src.source] ?? src.source) : 'older'}</Mono>
+                  <Mono className="hidden sm:block">
+                    {src ? (SOURCE_LABEL[src.source] ?? src.source) : 'older'}
+                  </Mono>
                   <Mono className="hidden sm:block">{fmtTime(src?.createdAt ?? f.createdAt)}</Mono>
                   <Button
                     variant="ghost"
@@ -204,7 +215,9 @@ export function Memory() {
           autoComplete="off"
           className={`${inputClass} mono text-[13px]`}
         />
-        {purge.isError && <ErrorState className="mt-3" title="Could not purge" detail={errMessage(purge.error)} />}
+        {purge.isError && (
+          <ErrorState className="mt-3" title="Could not purge" detail={errMessage(purge.error)} />
+        )}
       </ConfirmDialog>
     </div>
   );

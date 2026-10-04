@@ -14,7 +14,11 @@ export function SkeletonList({ rows = 4, label = 'Loading' }: { rows?: number; l
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className={cn('py-3.5', i > 0 && 'border-t border-line')}>
           <Skeleton className="mb-2 h-2.5 w-14" />
-          <div className="skeleton h-3.5" style={{ width: `${[88, 70, 80, 62, 76][i % 5]}%` }} aria-hidden="true" />
+          <div
+            className="skeleton h-3.5"
+            style={{ width: `${[88, 70, 80, 62, 76][i % 5]}%` }}
+            aria-hidden="true"
+          />
         </div>
       ))}
       <span className="sr-only">{label}</span>

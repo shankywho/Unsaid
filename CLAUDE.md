@@ -14,7 +14,7 @@ Spec: `UNSAID_BUILD.md`. Decision log: `DECISIONS.md`.
 - **Never report results not produced by `pnpm eval` with the `eval_judge` agent (via Lyzr).** Mock-mode numbers are
   smoke tests and must be labelled as such. Never self-grade.
 - **No medical claims.** Unsaid is a communication aid, not a diagnostic or therapeutic device.
-- Frontend lives in `/web` (React + Vite). Landing numbers are read from the newest **live** eval report at build time: never hardcode or round them. Amber is only for live/voice states and resolved sentences; patient fragments are always muted mono, resolved sentences always large serif. `public/debug.html` is a dev tool only.
+- Frontend lives in `/web` (React + Vite). Landing numbers are read from the newest **live** eval report at build time: never hardcode or round them. The design is dark (spec: `web/design-ref/`, tokens in `web/src/design/tokens.css`): Geist + Geist Mono only, no serif. The mint accent is only for live states, the current question and the confirmed sentence; patient fragments are always dim mono, resolved sentences always large sans with a faint glow. Never hardcode a patient name; render it from the user record. `public/debug.html` is a dev tool only.
 
 ## Stack
 

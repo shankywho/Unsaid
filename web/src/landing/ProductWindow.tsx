@@ -31,14 +31,22 @@ export function ProductDemo() {
         </Chip>
       </div>
       <div className="grid min-h-[700px] grid-cols-1 divide-y divide-line md:grid-cols-[260px_minmax(0,1fr)_340px] md:divide-x md:divide-y-0">
-        <section aria-label="Transcript (scripted example)" className="hidden max-h-[700px] overflow-hidden px-5 md:block">
+        <section
+          aria-label="Transcript (scripted example)"
+          className="hidden max-h-[700px] overflow-hidden px-5 md:block"
+        >
           <p className="flex h-[52px] items-center text-[13px] font-medium text-muted">Transcript</p>
           <TranscriptFeed feed={state.feed} patientName={DEMO_PATIENT} />
         </section>
-        <section aria-label="Reasoning (scripted example)" className="max-h-[700px] overflow-hidden px-5 [mask-image:linear-gradient(to_bottom,black_92%,transparent)]">
+        <section
+          aria-label="Reasoning (scripted example)"
+          className="max-h-[700px] overflow-hidden px-5 [mask-image:linear-gradient(to_bottom,black_92%,transparent)]"
+        >
           <div className="flex h-[52px] items-center justify-between">
             <p className="text-[13px] font-medium text-muted">Reasoning</p>
-            <span className="mono text-[12px] text-faint">{total !== undefined ? fmtMs(total) : state.thinking ? 'running' : 'idle'}</span>
+            <span className="mono text-[12px] text-faint">
+              {total !== undefined ? fmtMs(total) : state.thinking ? 'running' : 'idle'}
+            </span>
           </div>
           <ReasoningTimeline
             steps={state.steps}
@@ -75,7 +83,8 @@ export function ProductDemo() {
         </section>
       </div>
       <p className="border-t border-line px-4 py-2 text-[12px] text-faint">
-        <Fragment className="text-[12px] text-faint">scripted example</Fragment> · timings are the median from the latest live evaluation
+        <Fragment className="text-[12px] text-faint">scripted example</Fragment> · timings are the median from
+        the latest live evaluation
       </p>
     </div>
   );

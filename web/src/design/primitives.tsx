@@ -209,7 +209,12 @@ export function StatusDot({
     pending: 'border-[1.5px] border-ghost bg-transparent',
     danger: 'bg-danger',
   }[tone];
-  return <span aria-hidden="true" className={cn('inline-block h-1.5 w-1.5 shrink-0 rounded-full', style, pulse && 'pulse')} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('inline-block h-1.5 w-1.5 shrink-0 rounded-full', style, pulse && 'pulse')}
+    />
+  );
 }
 
 /** A real switch (button role=switch), not a pill. */
@@ -320,7 +325,9 @@ export function Select<T extends string>({
               }}
               className={cn(
                 'flex min-h-9 w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[14px]',
-                o.value === value ? 'bg-white/[0.06] text-ink' : 'text-muted hover:bg-white/[0.04] hover:text-ink',
+                o.value === value
+                  ? 'bg-white/[0.06] text-ink'
+                  : 'text-muted hover:bg-white/[0.04] hover:text-ink',
               )}
             >
               <span className="flex-1">

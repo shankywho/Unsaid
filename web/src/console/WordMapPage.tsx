@@ -37,7 +37,13 @@ export function WordMapPage() {
         sub={`How ${patient?.displayName ?? 'this patient'}’s own words map to what they mean. Updated only when they confirm a sentence.`}
       />
       {wm.isLoading && <SkeletonList label="Loading word map" />}
-      {wm.isError && <ErrorState title="Could not load the word map" detail={errMessage(wm.error)} onRetry={() => wm.refetch()} />}
+      {wm.isError && (
+        <ErrorState
+          title="Could not load the word map"
+          detail={errMessage(wm.error)}
+          onRetry={() => wm.refetch()}
+        />
+      )}
       {wm.isSuccess && rows.length === 0 && (
         <EmptyState
           title="Nothing learned yet"
@@ -49,11 +55,21 @@ export function WordMapPage() {
           <table className="w-full min-w-[640px] border-collapse text-[14px]">
             <thead>
               <tr className="border-b border-line-strong text-left text-[12px] text-faint">
-                <th scope="col" className="w-[28%] px-3 py-2.5 font-medium">Heard</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Means</th>
-                <th scope="col" className="w-[130px] px-3 py-2.5 font-medium">Kind</th>
-                <th scope="col" className="w-[150px] px-3 py-2.5 text-right font-medium">Confirmed</th>
-                <th scope="col" className="w-[130px] px-3 py-2.5 font-medium">Last</th>
+                <th scope="col" className="w-[28%] px-3 py-2.5 font-medium">
+                  Heard
+                </th>
+                <th scope="col" className="px-3 py-2.5 font-medium">
+                  Means
+                </th>
+                <th scope="col" className="w-[130px] px-3 py-2.5 font-medium">
+                  Kind
+                </th>
+                <th scope="col" className="w-[150px] px-3 py-2.5 text-right font-medium">
+                  Confirmed
+                </th>
+                <th scope="col" className="w-[130px] px-3 py-2.5 font-medium">
+                  Last
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -68,8 +84,14 @@ export function WordMapPage() {
                   </td>
                   <td className="px-3 py-3">
                     <span className="flex items-center justify-end gap-3">
-                      <span className="h-[3px] w-14 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-                        <span className="block h-full bg-muted" style={{ width: `${(r.hits / maxHits) * 100}%` }} />
+                      <span
+                        className="h-[3px] w-14 overflow-hidden rounded-full bg-white/10"
+                        aria-hidden="true"
+                      >
+                        <span
+                          className="block h-full bg-muted"
+                          style={{ width: `${(r.hits / maxHits) * 100}%` }}
+                        />
                       </span>
                       <span className="mono w-6 text-right tabular-nums">{r.hits}</span>
                     </span>

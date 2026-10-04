@@ -19,7 +19,8 @@ async function scan(page: import('@playwright/test').Page, name: string) {
     () =>
       document
         .getAnimations()
-        .filter((a) => a.playState !== 'finished' && a.effect?.getTiming().iterations !== Infinity).length === 0,
+        .filter((a) => a.playState !== 'finished' && a.effect?.getTiming().iterations !== Infinity).length ===
+      0,
   );
   const r = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -75,7 +76,10 @@ test('axe: landing at 375px', async ({ page }) => {
   await scan(page, '/ (375)');
 });
 
-test('axe: live console states (reasoning, question, confirmed) and the 1024 rail', async ({ page, request }) => {
+test('axe: live console states (reasoning, question, confirmed) and the 1024 rail', async ({
+  page,
+  request,
+}) => {
   await seedPatient(request);
   await login(page);
   await scan(page, 'live idle');
