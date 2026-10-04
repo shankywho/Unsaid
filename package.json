@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx scripts/eval.ts",
+    "eval:learn": "tsx scripts/eval-learn.ts",
     "replay:omi": "tsx scripts/replay-omi.ts",
     "lyzr:setup": "tsx scripts/lyzr-setup.ts",
     "verify:live": "tsx scripts/verify-live.ts",

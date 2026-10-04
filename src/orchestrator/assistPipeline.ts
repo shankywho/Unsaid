@@ -127,17 +127,55 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
         },
       },
       {
+        name: 'retrieve_raw_memory',
+        // Starts at t=0 in parallel with classify and fragment_analyze
+        deps: [],
+        skip: () => (!contextUsed ? 'context disabled' : null),
+        input: () => ({ fragment: text }),
+        run: async () => {
+          const hits = await searchMemory(userId, [text], 8);
+          const retrieval = hits.map((h) => ({
+            id: h.id,
+            type: h.type,
+            text: h.text,
+            score: Number(h.score.toFixed(3)),
+          }));
+          return { output: hits, retrieval };
+        },
+      },
+      {
         name: 'retrieve_memory',
-        deps: ['fragment_analyze'],
+        deps: ['retrieve_raw_memory', 'fragment_analyze'],
         skip: () => (!contextUsed ? 'context disabled' : null),
         input: (results) => {
           const analyst = out<FragmentAnalystOutput>(results, 'fragment_analyze');
-          return { queries: [text, ...(analyst?.retrievalQueries ?? [])] };
+          return {
+            rawHitsCount: out<ScoredMemoryHit[]>(results, 'retrieve_raw_memory')?.length ?? 0,
+            queries: analyst?.retrievalQueries ?? [],
+          };
         },
         run: async (results) => {
           const analyst = out<FragmentAnalystOutput>(results, 'fragment_analyze');
-          const queries = [text, ...(analyst?.retrievalQueries ?? [])];
-          const hits = await searchMemory(userId, queries);
+          const rawHits = out<ScoredMemoryHit[]>(results, 'retrieve_raw_memory') ?? [];
+          const extraQueries = (analyst?.retrievalQueries ?? []).filter(
+            (q) => q && q.trim().toLowerCase() !== text.trim().toLowerCase(),
+          );
+
+          let extraHits: ScoredMemoryHit[] = [];
+          if (extraQueries.length > 0) {
+            extraHits = await searchMemory(userId, extraQueries, 8);
+          }
+
+          // Merge and deduplicate by point ID, keeping highest score
+          const mergedMap = new Map<string, ScoredMemoryHit>();
+          for (const hit of [...rawHits, ...extraHits]) {
+            const existing = mergedMap.get(hit.id);
+            if (!existing || hit.score > existing.score) {
+              mergedMap.set(hit.id, hit);
+            }
+          }
+
+          const hits = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
           const retrieval = hits.map((h) => ({
             id: h.id,
             type: h.type,

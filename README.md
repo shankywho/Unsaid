@@ -142,23 +142,6 @@ eval_judge (eval suite)   1,540ms      1,838ms      1,094ms    3,708ms    71    
 TOTAL ASSIST PIPELINE     7,126ms      7,617ms                                   Live end-to-end assist latency
 ```
 
-#### Before vs. After Pipeline Latency Optimization:
-
-```
-Pipeline Step             Before (Sequential DAG)            After (Parallel DAG + Fast Paths)            Latency Delta
-------------------------- ---------------------------------- -------------------------------------------- -------------------------
-classify                  ~1,720ms (sequential)              1,447ms p50 (parallel at t=0)                Overlapped with analyst
-fragment_analyze          ~2,546ms (sequential)              2,375ms p50 (parallel at t=0)                Pre-hypothesis wait = 2.4s
-retrieve_wordmap             ~15ms (sequential)                   7ms p50 (parallel at t=0)                -8ms
-retrieve_memory              ~25ms (sequential)                  18ms p50 (parallel retrieval)             -7ms
-hypothesize               ~5,100ms                           4,795ms p50                                  -305ms
-compose_question          ~1,500ms (Lyzr LLM call)                2ms p50 (bypassed attempt 1)             -1,498ms (100% LLM saved)
-tts_question                  ~3ms                                3ms p50                                  0ms
-await_confirmation            ~8ms                                8ms p50                                  0ms
-------------------------- ---------------------------------- -------------------------------------------- -------------------------
-TOTAL PIPELINE LATENCY    ~10,917ms                          7,126ms p50 (7,617ms avg)                    -3,791ms (~35% reduction)
-```
-
 #### Observations from the Ablation Results:
 
 - **Context Ablation Gap:** Context ON achieved **0.38 Top-1 / 0.44 Top-3**, compared to **0.28 Top-1 / 0.31 Top-3** for Context OFF (+10% Top-1, +13% Top-3). Without ambient memory facts, telegraphic tokens like `"Sunday… Priya… cake… no"` or `"the… the thing… eyes… broken"` cannot be reliably resolved to specific household events or personal items.

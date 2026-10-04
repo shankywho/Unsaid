@@ -59,10 +59,7 @@ async function resetUserWordMap(userId: string): Promise<void> {
     void err; // collection may not exist yet or have zero points
   }
   await prisma.wordMapEntry.deleteMany({ where: { userId } });
-
-  // Fixed baseline fixtures: "car" -> "walk", "Pri" -> "Priya"
-  await upsertSubstitution(userId, 'car', 'walk', 'SUBSTITUTION');
-  await upsertSubstitution(userId, 'Pri', 'Priya', 'NAME_ALIAS');
+  // Word map starts completely empty per leakage audit
 }
 
 export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
