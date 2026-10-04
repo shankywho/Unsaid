@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { login, seedPatient } from './helpers';
 
-const PUBLIC = ['/', '/login'];
+const PUBLIC = ['/'];
 const CONSOLE = [
   '/app/live',
   '/app/memory',

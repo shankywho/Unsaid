@@ -42,7 +42,7 @@ test('hero shows the confirmed frame by default and under reduced motion', async
 
 test('console shell has no horizontal overflow at 375px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto('/login');
+  await page.goto('/app/live');
   const { sw, cw } = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
     cw: document.documentElement.clientWidth,

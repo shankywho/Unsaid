@@ -4,17 +4,10 @@ import { auth, login, seedPatient } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
-test('unauthenticated /app redirects to login', async ({ page }) => {
-  await page.goto('/app/live');
-  await expect(page).toHaveURL(/\/login/);
-});
-
-test('login rejects a wrong password with an explanation', async ({ page }) => {
+test('the console opens directly, with no sign-in', async ({ page }) => {
   await page.goto('/login');
-  await page.getByLabel('Email').fill(E2E.email);
-  await page.getByLabel('Password').fill('nope');
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('alert')).toContainText('invalid email or password');
+  await expect(page).toHaveURL(/\/app\/live/);
+  await expect(page.getByRole('navigation', { name: 'Console' })).toBeVisible();
 });
 
 test('login → fragment → trace animates → YES → resolved sentence', async ({ page, request }) => {

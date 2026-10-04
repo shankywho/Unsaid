@@ -37,7 +37,7 @@ function Nav() {
             GitHub
           </a>
         </nav>
-        <Link to="/login">
+        <Link to="/app/live">
           <Button size="sm">Open console</Button>
         </Link>
       </div>
@@ -425,7 +425,7 @@ function Footer() {
           <a className="hover:text-ink" href={`${GITHUB_URL}/blob/main/docs/FRONTEND_CONTRACT.md`}>
             Event contract
           </a>
-          <Link className="hover:text-ink" to="/login">
+          <Link className="hover:text-ink" to="/app/live">
             Console
           </Link>
         </nav>

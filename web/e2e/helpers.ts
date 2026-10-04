@@ -3,11 +3,9 @@ import { E2E } from '../playwright.config';
 
 export const auth = { Authorization: `Bearer ${E2E.apiKey}` };
 
+/** No sign-in: the console opens directly. */
 export async function login(page: Page): Promise<void> {
-  await page.goto('/login');
-  await page.getByLabel('Email').fill(E2E.email);
-  await page.getByLabel('Password').fill(E2E.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.goto('/app/live');
   await expect(page).toHaveURL(/\/app\/live/);
 }
 

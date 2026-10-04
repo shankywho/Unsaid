@@ -22,6 +22,10 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * Cookie-authenticated state-changing requests must come from the same origin or an allowlisted `Origin` (CSRF defence).
  */
 export const requireAuth: RequestHandler = (req, _res, next) => {
+  if (env.AUTH_DISABLED) {
+    req.principal = { type: 'session', email: 'open-console', expiresAt: Date.now() + 86_400_000 };
+    return next();
+  }
   const h = req.header('authorization') ?? '';
   const bearer = h.startsWith('Bearer ') ? h.slice(7) : '';
   const queryKey = typeof req.query.api_key === 'string' ? req.query.api_key : '';

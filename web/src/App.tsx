@@ -4,7 +4,6 @@ import { Landing } from './landing/Landing';
 import { Skeleton } from './design/feedback';
 
 const ConsoleRoot = lazy(() => import('./console/Root').then((m) => ({ default: m.ConsoleRoot })));
-const Login = lazy(() => import('./console/Login').then((m) => ({ default: m.Login })));
 const Shell = lazy(() => import('./console/Shell').then((m) => ({ default: m.Shell })));
 const Live = lazy(() => import('./console/Live').then((m) => ({ default: m.Live })));
 const Memory = lazy(() => import('./console/Memory').then((m) => ({ default: m.Memory })));
@@ -24,7 +23,7 @@ export function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route element={page(<ConsoleRoot />)}>
-        <Route path="/login" element={page(<Login />)} />
+        <Route path="/login" element={<Navigate to="/app/live" replace />} />
         <Route path="/app" element={page(<Shell />)}>
           <Route index element={<Navigate to="live" replace />} />
           <Route path="live" element={page(<Live />)} />

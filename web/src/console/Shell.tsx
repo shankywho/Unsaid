@@ -1,16 +1,8 @@
 import { useEffect } from 'react';
-import { NavLink, Navigate, Outlet, useNavigate, Link } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Activity,
-  Brain,
-  BookOpenText,
-  GitBranch,
-  FlaskConical,
-  Settings as Cog,
-  LogOut,
-} from 'lucide-react';
-import { UNAUTHORIZED_EVENT, client, unwrap } from '../api/client';
+import { Activity, Brain, BookOpenText, GitBranch, FlaskConical, Settings as Cog } from 'lucide-react';
+import { UNAUTHORIZED_EVENT } from '../api/client';
 import { useMe, useOmiStatus, useSetContext } from '../api/hooks';
 import { PatientProvider, usePatient, useStreamStatus } from './patient';
 import { Chip, Select, StatusDot, Switch, Wordmark } from '../design/primitives';
@@ -108,13 +100,6 @@ function TopBar() {
 }
 
 function Sidebar() {
-  const nav = useNavigate();
-  const qc = useQueryClient();
-  async function logout() {
-    await unwrap(client.POST('/auth/logout')).catch(() => undefined);
-    qc.clear();
-    nav('/login', { replace: true });
-  }
   const item =
     'flex h-[34px] shrink-0 items-center gap-2.5 rounded-[8px] px-2.5 text-[14px] font-medium md:justify-center xl:justify-start';
   return (
@@ -152,17 +137,6 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="hidden md:block">
-        <button
-          type="button"
-          onClick={logout}
-          title="Log out"
-          className={cn(item, 'w-full text-muted hover:bg-white/[0.04] hover:text-ink')}
-        >
-          <LogOut className="h-4 w-4" aria-hidden="true" />
-          <span className="md:sr-only xl:not-sr-only">Log out</span>
-        </button>
-      </div>
     </aside>
   );
 }
@@ -188,8 +162,6 @@ export function Shell() {
       </div>
     );
   if (me.isError) {
-    const status = (me.error as { status?: number }).status;
-    if (status === 401) return <Navigate to="/login" replace />;
     return (
       <div className="p-6">
         <ErrorState

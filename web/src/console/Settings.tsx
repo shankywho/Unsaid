@@ -118,17 +118,23 @@ export function Settings() {
       <Section id="acct" title="Account">
         {p ? (
           <p>
-            Signed in{' '}
-            {p.type === 'session' ? (
-              <>
-                as <Mono className="text-ink">{p.email}</Mono>
-              </>
+            {p.type === 'session' && p.email === 'open-console' ? (
+              'Open console: sign-in is turned off (AUTH_DISABLED).'
             ) : (
-              'with the API key'
-            )}
-            .
-            {p.type === 'session' && (
-              <span className="text-muted"> Session ends {fmtTime(p.expiresAt)}.</span>
+              <>
+                Signed in{' '}
+                {p.type === 'session' ? (
+                  <>
+                    as <Mono className="text-ink">{p.email}</Mono>
+                  </>
+                ) : (
+                  'with the API key'
+                )}
+                .
+                {p.type === 'session' && (
+                  <span className="text-muted"> Session ends {fmtTime(p.expiresAt)}.</span>
+                )}
+              </>
             )}
           </p>
         ) : (

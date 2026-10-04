@@ -7,6 +7,7 @@ process.env.DATABASE_URL = base.toString();
 process.env.REDIS_URL = `${(process.env.REDIS_URL ?? 'redis://localhost:6379').replace(/\/\d+$/, '')}/1`;
 process.env.QDRANT_COLLECTION_PREFIX = 'test_';
 process.env.MOCK_EXTERNALS = 'true';
+process.env.AUTH_DISABLED = 'false';
 process.env.NODE_ENV = 'test';
 process.env.AUDIO_DIR = './storage/test-audio';
 process.env.API_KEY = 'test-key';
