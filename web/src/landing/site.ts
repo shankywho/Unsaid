@@ -1,4 +1,4 @@
-export const GITHUB_URL: string = import.meta.env.VITE_GITHUB_URL || 'https://github.com/shankar7055/Unsaid';
+export const GITHUB_URL: string = import.meta.env.VITE_GITHUB_URL || 'https://github.com/shankywho/Unsaid';
 export const DEMO_VIDEO_URL: string = import.meta.env.VITE_DEMO_VIDEO_URL || '';
 
 /** YouTube / Loom share URL -> embeddable URL (privacy-enhanced YouTube domain). */
