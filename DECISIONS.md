@@ -198,5 +198,42 @@ The evaluation judge rubric assesses clinical communicative utility rather than 
   2. **Time/Number Formatting Expansions:** Literal timestamp formatting (e.g. `six -> 6 PM`, `two -> 2 times`).
   3. **Identical or Substring Matches:** Redundant tokens where `meant` contains `said`.
 
+## Phase 14 — Handover: eval freeze, production hardening, contract, deploy (2026-10-04)
 
+### A. Eval freeze
 
+- **Invalid results removed.** The "re-judged stored outputs" numbers (and the mock-mode numbers) are gone from the README. The re-judge used an empty judge function and was graded by the previous agent itself. README now contains only `pnpm eval` / `pnpm eval:learn` output judged by the `eval_judge` Lyzr agent.
+- **Provenance stamp.** Eval reports now record mode (live/mock), provider, model and judge. `pnpm eval` and `pnpm eval:learn` refuse to run in mock mode unless `EVAL_ALLOW_MOCK=true`. Tests set that flag and write to `storage/test-eval-results`, so `pnpm test` can no longer drop mock reports into `eval-results/` (this had happened: the newest files found there were mock smoke runs with millisecond latencies). Old unstamped reports moved to `eval-results/archive-pre-provenance/`.
+- **Official live run:** `docs/eval/live-eval-2026-10-04.*` (ON 0.63/0.94, OFF 0.63/0.72, p50 7.3 s). The previous agent's eval process was still running and finished at 08:19 UTC while this run was in progress (two evals overlapped on the same dev stack; users are isolated, so accuracy is unaffected, latency may be). Its report (ON 0.69/0.88, OFF 0.63/0.75) has no provenance stamp and is only cited as a variance data point.
+- **Translation blocklist removed.** `isTrueSubstitution` no longer contains Hindi/English or time/number word lists. The learner agent returns `relation` (`SUBSTITUTION | TRANSLATION | FORMAT | ALIAS`); only `SUBSTITUTION` is stored as a substitution; a missing relation is treated as unverified and not stored; identical said/meant is still rejected. The learner prompt was updated and pushed to the existing Lyzr learner agent (`pnpm lyzr:setup --only=learner`, now updates in place instead of creating duplicates). Observed live: FORMAT pairs rejected; some questionable pairs still pass (`car -> time`, `six -> evening`), and a translation (`beti -> daughter`) was stored via the `nameAliases` list. Not tuned (rule: no tuning after Phase A).
+- **Learning loop (live, n=10):** top-1 10% -> 30%. Reported as-is.
+
+### B. Hardening
+
+- Auth: stateless HMAC-signed session cookie (`unsaid_session`, httpOnly, SameSite configurable, 24 h) for the one demo account from env; no new dependency or DB table. Bearer `API_KEY` kept for scripts and `?api_key=` kept for EventSource/`<audio>`/`/debug`. Cookie-authenticated writes require an allowlisted `Origin` (CSRF). Comparisons are constant-time.
+- Webhook secret: accepted via `?secret=`, `x-omi-secret`, or a path segment (`/webhooks/omi/transcript/<secret>`) because it is undocumented whether Omi appends `?uid=` correctly to a URL that already has a query string. The secret is no longer logged or stored in `RawWebhook` (the old code logged the full query on mismatch).
+- Production boot fails without a strong `API_KEY`, `SESSION_SECRET` (>= 32) and `OMI_WEBHOOK_SECRET` (>= 16). `/debug` and static files are not served in production; `/docs` is non-production unless `ENABLE_DOCS=true`.
+- Error envelope unified to `{error:{code,message,requestId,details?}}` with snake_case codes for every error including body-parser (413/400), Prisma P2025 (404) and rate limits (429). Agent parse errors are `agent_parse_error`.
+- Rate limiting uses the in-memory store (per instance). Acceptable for one instance; documented.
+- **Bug fixed: Omi duplicate handling.** The old `upsert(update: {})` stored one row but still emitted events and re-ran ASSIST/ingest for every resend. Segments are now inserted with the unique `(userId, dedupeKey)` index as arbiter (`src/ingest/recordSegment.ts`); duplicates (including concurrent ones) do no further work. Covered by a test.
+- **Bug fixed: confirmation timeout.** Only the Redis pointer expired; the DB row stayed `PENDING` forever and no event fired. A 10 s BullMQ sweep (`sweepExpiredConfirmations`) now expires such rows with `confirmation.expired {reason:"timeout"}` and fails the run. Also made the "yes" answer an atomic claim so a double-tap cannot enqueue learning twice, and the audio route validates a UUID (path traversal).
+- Logging: transcript/fact text moved from info to debug (info carries lengths and ids); agent raw-output snippets moved to debug.
+- Graceful shutdown (`src/lifecycle.ts`): `/readyz` -> 503, SSE streams ended, HTTP drained, BullMQ workers then queues closed, event relay, Prisma, Redis; no `process.exit` on success so a leaked handle would hold the process (a 25 s watchdog forces exit 1). Verified by a test that spawns the real server, holds an SSE stream and asserts a clean exit 0, and by a container run (`docker stop` -> exit 0).
+- `prisma` moved to `dependencies` so `prisma migrate deploy` runs inside the image. Image verified: build, healthcheck, production boot with mocks.
+- gitleaks (official image) over full history (18 commits at the time): no leaks.
+
+### C. Contract
+
+- `src/http/schemas.ts` is the single source for validation and for `docs/openapi.yaml` (OpenAPI 3.1 built with `z.toJSONSchema`; `pnpm openapi`, checked in CI with `pnpm openapi:check`). A test fails if a served route is undocumented or a documented route does not exist.
+- New events: `hypotheses.generated` (full ranked list with evidence ids), `segment.classified` is now actually emitted (was declared, never published). `confirmation.asked` carries the hypothesis list, `confirmation.answered` carries `answeredIndex`. An ordering test pins the lifecycle documented in `docs/FRONTEND_CONTRACT.md`.
+- ASSIST runs end via `assist.resolved` / `assist.unresolved` / `confirmation.expired`, not `run.completed` (documented, deliberate).
+
+### D. Omi
+
+- Payload shape per docs.omi.me (checked 2026-10-04): real-time webhook POSTs a **bare array** of segments with camelCase `speakerId`, plus `uid` and `session_id` in the query; requires an active live-listen session; segments arrive over multiple calls. The existing tolerant parser already handles this (test added). **Not yet confirmed against a live Omi session**; every raw payload is stored in `RawWebhook` to settle it on first contact.
+- `GET /v1/omi/status` reports last segment time/source and 5-minute counts per source.
+
+### E/F. Deployment and docs
+
+- Railway (`railway.json`, Dockerfile, pre-deploy migration, `/readyz` health check) and Render (`render.yaml`) configs; `docs/DEPLOY.md`. Nothing was deployed.
+- Assumed (unverified, no accounts used): Neon direct connection for migrations, Upstash TLS Redis protocol URL for BullMQ, Qdrant Cloud REST on :6333; Railway `preDeployCommand` string form.

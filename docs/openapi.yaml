@@ -1,0 +1,2176 @@
+openapi: 3.1.0
+info:
+  title: Unsaid API
+  version: 0.1.0
+  description: Backend for Unsaid, a communication aid for people with non-fluent aphasia. Not a medical device; makes no diagnostic or therapeutic claims. Generated from zod schemas (src/http/schemas.ts) by `pnpm openapi`.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://localhost:8080
+    description: Local
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Assist
+  - name: Events
+  - name: Runs
+  - name: Memory
+  - name: Omi
+  - name: Webhooks
+paths:
+  /healthz:
+    get:
+      tags:
+        - Health
+      summary: Liveness probe
+      description: Process is up. Never touches dependencies.
+      operationId: get_healthz
+      security: []
+      responses:
+        "200":
+          description: Alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liveness"
+  /readyz:
+    get:
+      tags:
+        - Health
+      summary: Readiness probe
+      description: Checks Postgres, Redis, Qdrant reachability and Lyzr configuration. 503 when degraded.
+      operationId: get_readyz
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: Degraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Log in with the demo account
+      description: 'Sets an httpOnly `unsaid_session` cookie. Send later requests with `credentials: "include"`. Rate limited per IP.'
+      operationId: post_auth_login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+              required:
+                - email
+                - password
+      security: []
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                      expiresAt:
+                        type: string
+                        format: date-time
+                    required:
+                      - email
+                      - expiresAt
+                    additionalProperties: false
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Service unavailable / not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Clear the session cookie
+      operationId: post_auth_logout
+      security: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                required:
+                  - ok
+                additionalProperties: false
+  /v1/me:
+    get:
+      tags:
+        - Auth
+      summary: Current principal and the patients it can see
+      operationId: get_v1_me
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Principal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/Me"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/users:
+    post:
+      tags:
+        - Users
+      summary: Create a patient profile
+      operationId: post_v1_users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                omiUid:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                caregiverName:
+                  type: string
+                  maxLength: 200
+                contextEnabled:
+                  type: boolean
+                assistMode:
+                  type: string
+                  enum:
+                    - AUTO
+                    - ON
+                    - OFF
+              required:
+                - displayName
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/User"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get a patient with activity counts
+      operationId: get_v1_users_id
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/UserDetail"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      tags:
+        - Users
+      summary: Update patient settings (context ON/OFF ablation toggle, assist mode)
+      operationId: patch_v1_users_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                caregiverName:
+                  type: string
+                  maxLength: 200
+                contextEnabled:
+                  type: boolean
+                assistMode:
+                  type: string
+                  enum:
+                    - AUTO
+                    - ON
+                    - OFF
+              additionalProperties: false
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/User"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/users/{id}/wordmap:
+    get:
+      tags:
+        - Users
+      summary: "Learned word map: substitutions and resolved utterances"
+      operationId: get_v1_users_id_wordmap
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Word map
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/WordMap"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/users/{id}/insights:
+    get:
+      tags:
+        - Users
+      summary: "Caregiver insights: resolution rates and top substitutions"
+      operationId: get_v1_users_id_insights
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/Insights"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/simulate/fragment:
+    post:
+      tags:
+        - Assist
+      summary: Run the ASSIST pipeline on a fragment
+      description: Equivalent to a patient fragment arriving from Omi. Returns once the first confirmation question has been created; follow progress on `/v1/stream`. A bare "yes"/"no" while a confirmation is pending answers it locally.
+      operationId: post_v1_simulate_fragment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+              required:
+                - userId
+                - text
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Pipeline result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/AssistResult"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/simulate/segments:
+    post:
+      tags:
+        - Assist
+      summary: Inject transcript segments (ambient or patient) as if they came from Omi
+      description: "Idempotent: re-sending a segment is counted in `duplicates` and does no further work."
+      operationId: post_v1_simulate_segments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                sessionId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                segments:
+                  minItems: 1
+                  maxItems: 200
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        maxLength: 4000
+                      isUser:
+                        default: false
+                        type: boolean
+                      speaker:
+                        anyOf:
+                          - type: string
+                            maxLength: 200
+                          - type: "null"
+                      start:
+                        type:
+                          - number
+                          - "null"
+                      end:
+                        type:
+                          - number
+                          - "null"
+                    required:
+                      - text
+              required:
+                - userId
+                - segments
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  processed:
+                    type: integer
+                  duplicates:
+                    type: integer
+                required:
+                  - ok
+                  - processed
+                  - duplicates
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/confirmations/{id}:
+    get:
+      tags:
+        - Assist
+      summary: Get a confirmation (state machine snapshot)
+      operationId: get_v1_confirmations_id
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/Confirmation"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/confirmations/{id}/answer:
+    post:
+      tags:
+        - Assist
+      summary: Answer yes/no to the current confirmation question
+      description: "`yes` resolves with the current hypothesis; `no` advances to the next hypothesis, or ends with `assist.unresolved` after the last. Answering a non-PENDING confirmation is a no-op that returns its final state."
+      operationId: post_v1_confirmations_id_answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answer:
+                  type: string
+                  enum:
+                    - yes
+                    - no
+              required:
+                - answer
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/AnswerResult"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/audio/{id}:
+    get:
+      tags:
+        - Assist
+      summary: Stream a synthesized question/sentence (MP3)
+      description: "Public: browser `<audio>` cannot send headers. Ids are unguessable UUIDs."
+      operationId: get_v1_audio_id
+      security: []
+      responses:
+        "200":
+          description: audio/mpeg
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/stream:
+    get:
+      tags:
+        - Events
+      summary: Server-Sent Events feed for one patient
+      description: "Each frame is `event: <type>` + `data: <EventEnvelope JSON>`. See docs/FRONTEND_CONTRACT.md for every event type and the ASSIST trace lifecycle. Browsers: `new EventSource(url, { withCredentials: true })` with the session cookie, or `?api_key=` for scripts."
+      operationId: get_v1_stream
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: text/event-stream of EventEnvelope
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/EventEnvelope"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/runs:
+    get:
+      tags:
+        - Runs
+      summary: List pipeline runs
+      operationId: get_v1_runs
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: pipeline
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ASSIST
+              - INGEST
+              - LEARN
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        pipeline:
+                          type: string
+                          enum:
+                            - ASSIST
+                            - INGEST
+                            - LEARN
+                        status:
+                          type: string
+                          enum:
+                            - RUNNING
+                            - AWAITING_CONFIRMATION
+                            - SUCCEEDED
+                            - FAILED
+                        input: {}
+                        output:
+                          anyOf:
+                            - {}
+                            - type: "null"
+                        contextUsed:
+                          type: boolean
+                        startedAt:
+                          type: string
+                          format: date-time
+                        endedAt:
+                          anyOf:
+                            - type: string
+                              format: date-time
+                            - type: "null"
+                        _count:
+                          type: object
+                          properties:
+                            steps:
+                              type: integer
+                          required:
+                            - steps
+                          additionalProperties: false
+                      required:
+                        - id
+                        - userId
+                        - pipeline
+                        - status
+                        - input
+                        - output
+                        - contextUsed
+                        - startedAt
+                        - endedAt
+                        - _count
+                      additionalProperties: false
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/runs/{id}:
+    get:
+      tags:
+        - Runs
+      summary: "Full trace of a run: steps, latencies, retrieval hits with scores"
+      operationId: get_v1_runs_id
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Run trace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/RunDetail"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/memory:
+    get:
+      tags:
+        - Memory
+      summary: List or semantically search a patient's memory facts
+      operationId: get_v1_memory
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Facts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MemoryFact"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/memory/{pointId}:
+    delete:
+      tags:
+        - Memory
+      summary: Delete one memory fact (privacy control)
+      operationId: delete_v1_memory_pointId
+      parameters:
+        - name: pointId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  deleted:
+                    type: string
+                required:
+                  - ok
+                  - deleted
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/memory/purge:
+    post:
+      tags:
+        - Memory
+      summary: Erase all memory and word-map vectors for a patient
+      operationId: post_v1_memory_purge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+                - userId
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Purged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  purged:
+                    type: boolean
+                    const: true
+                  userId:
+                    type: string
+                required:
+                  - ok
+                  - purged
+                  - userId
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /v1/omi/status:
+    get:
+      tags:
+        - Omi
+      summary: Is the Omi live path delivering?
+      description: Last segment time, source (OMI_REALTIME vs SIMULATED) and 5-minute counts.
+      operationId: get_v1_omi_status
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  data:
+                    $ref: "#/components/schemas/OmiStatus"
+                required:
+                  - ok
+                  - data
+                additionalProperties: false
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /webhooks/omi/transcript:
+    post:
+      tags:
+        - Webhooks
+      summary: Omi real-time transcript webhook
+      description: "Body: `{ session_id, segments: [...] }` (a bare array is also accepted). Query: `uid`, optional `session_id`. Authenticated by the webhook secret (`?secret=`, `x-omi-secret` header, or `/webhooks/omi/transcript/{secret}`), not by the API key. Always 200 for unparseable payloads (raw body is stored). Duplicate segments are reported in `duplicates` and do no extra work."
+      operationId: post_webhooks_omi_transcript
+      parameters:
+        - name: uid
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: secret
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: array
+                  items:
+                    type: object
+                    propertyNames:
+                      type: string
+                    additionalProperties: {}
+                - type: object
+                  properties:
+                    segments:
+                      type: array
+                      items:
+                        type: object
+                        propertyNames:
+                          type: string
+                        additionalProperties: {}
+                  required:
+                    - segments
+                  additionalProperties: {}
+      security:
+        - webhookSecret: []
+        - webhookSecretHeader: []
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /webhooks/omi/memory:
+    post:
+      tags:
+        - Webhooks
+      summary: Omi conversation-created (memory) webhook
+      description: Body is a finished conversation with `transcript_segments`. Runs the INGEST pipeline.
+      operationId: post_webhooks_omi_memory
+      parameters:
+        - name: uid
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: secret
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transcript_segments:
+                  type: array
+                  items:
+                    type: object
+                    propertyNames:
+                      type: string
+                    additionalProperties: {}
+              additionalProperties: {}
+      security:
+        - webhookSecret: []
+        - webhookSecretHeader: []
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+        "401":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+components:
+  schemas:
+    ErrorEnvelope:
+      $id: "#/components/schemas/ErrorEnvelope"
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: validation_error
+            message:
+              type: string
+            requestId:
+              type: string
+            details: {}
+          required:
+            - code
+            - message
+          additionalProperties: false
+      required:
+        - error
+      additionalProperties: false
+    User:
+      $id: "#/components/schemas/User"
+      type: object
+      properties:
+        omiUid:
+          type:
+            - string
+            - "null"
+        displayName:
+          type: string
+        role:
+          type: string
+          const: PATIENT
+        contextEnabled:
+          type: boolean
+        assistMode:
+          type: string
+          enum:
+            - AUTO
+            - ON
+            - OFF
+        caregiverName:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - omiUid
+        - displayName
+        - role
+        - contextEnabled
+        - assistMode
+        - caregiverName
+        - createdAt
+      additionalProperties: false
+    UserDetail:
+      $id: "#/components/schemas/UserDetail"
+      type: object
+      properties:
+        omiUid:
+          type:
+            - string
+            - "null"
+        displayName:
+          type: string
+        role:
+          type: string
+          const: PATIENT
+        contextEnabled:
+          type: boolean
+        assistMode:
+          type: string
+          enum:
+            - AUTO
+            - ON
+            - OFF
+        caregiverName:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+        _count:
+          type: object
+          properties:
+            segments:
+              type: integer
+            runs:
+              type: integer
+            confirmations:
+              type: integer
+            wordMapEntries:
+              type: integer
+          required:
+            - segments
+            - runs
+            - confirmations
+            - wordMapEntries
+          additionalProperties: false
+      required:
+        - id
+        - omiUid
+        - displayName
+        - role
+        - contextEnabled
+        - assistMode
+        - caregiverName
+        - createdAt
+        - _count
+      additionalProperties: false
+    Hypothesis:
+      $id: "#/components/schemas/Hypothesis"
+      type: object
+      properties:
+        intent:
+          type: string
+        sentence:
+          type: string
+        speaker_perspective_question:
+          type: string
+        confidence:
+          type: number
+        evidenceIds:
+          default: []
+          type: array
+          items:
+            type: string
+        reasoning:
+          type: string
+      required:
+        - intent
+        - sentence
+        - speaker_perspective_question
+        - confidence
+        - evidenceIds
+        - reasoning
+      additionalProperties: false
+    Confirmation:
+      $id: "#/components/schemas/Confirmation"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        fragment:
+          type: string
+        hypotheses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Hypothesis"
+        currentIndex:
+          type: integer
+        question:
+          type: string
+        questionAudio:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+          enum:
+            - PENDING
+            - CONFIRMED
+            - REJECTED_ALL
+            - EXPIRED
+        confirmedIdx:
+          anyOf:
+            - type: integer
+            - type: "null"
+        finalSentence:
+          type:
+            - string
+            - "null"
+        finalAudio:
+          type:
+            - string
+            - "null"
+        resolution:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+      required:
+        - id
+        - userId
+        - runId
+        - fragment
+        - hypotheses
+        - currentIndex
+        - question
+        - questionAudio
+        - status
+        - confirmedIdx
+        - finalSentence
+        - finalAudio
+        - resolution
+        - createdAt
+        - resolvedAt
+      additionalProperties: false
+    Step:
+      $id: "#/components/schemas/Step"
+      type: object
+      properties:
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        node:
+          type: string
+          example: retrieve_memory
+        agentId:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+          enum:
+            - RUNNING
+            - COMPLETED
+            - FAILED
+            - SKIPPED
+        input: {}
+        output:
+          anyOf:
+            - {}
+            - type: "null"
+        error:
+          type:
+            - string
+            - "null"
+        retrieval:
+          anyOf:
+            - type: array
+              items:
+                type: object
+                propertyNames:
+                  type: string
+                additionalProperties: {}
+            - type: "null"
+          description: Qdrant hits (id, type, text, score) for retrieval nodes
+        latencyMs:
+          anyOf:
+            - type: integer
+            - type: "null"
+        attempt:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+      required:
+        - id
+        - runId
+        - node
+        - agentId
+        - status
+        - input
+        - output
+        - error
+        - retrieval
+        - latencyMs
+        - attempt
+        - startedAt
+        - endedAt
+      additionalProperties: false
+    Run:
+      $id: "#/components/schemas/Run"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        pipeline:
+          type: string
+          enum:
+            - ASSIST
+            - INGEST
+            - LEARN
+        status:
+          type: string
+          enum:
+            - RUNNING
+            - AWAITING_CONFIRMATION
+            - SUCCEEDED
+            - FAILED
+        input: {}
+        output:
+          anyOf:
+            - {}
+            - type: "null"
+        contextUsed:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+      required:
+        - id
+        - userId
+        - pipeline
+        - status
+        - input
+        - output
+        - contextUsed
+        - startedAt
+        - endedAt
+      additionalProperties: false
+    WordMapEntry:
+      $id: "#/components/schemas/WordMapEntry"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        saidToken:
+          type: string
+        meantToken:
+          type: string
+        kind:
+          type: string
+          enum:
+            - SUBSTITUTION
+            - PHRASE
+            - NAME_ALIAS
+        hits:
+          type: integer
+        lastSeenAt:
+          type: string
+          format: date-time
+        qdrantId:
+          type: string
+      required:
+        - id
+        - userId
+        - saidToken
+        - meantToken
+        - kind
+        - hits
+        - lastSeenAt
+        - qdrantId
+      additionalProperties: false
+    MemoryFact:
+      $id: "#/components/schemas/MemoryFact"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        type:
+          type: string
+        text:
+          type: string
+        entities:
+          type: array
+          items:
+            type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        score:
+          type: number
+      required:
+        - id
+      additionalProperties: {}
+    Me:
+      $id: "#/components/schemas/Me"
+      type: object
+      properties:
+        principal:
+          oneOf:
+            - type: object
+              properties:
+                type:
+                  type: string
+                  const: api_key
+              required:
+                - type
+              additionalProperties: false
+            - type: object
+              properties:
+                type:
+                  type: string
+                  const: session
+                email:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+              required:
+                - type
+                - email
+                - expiresAt
+              additionalProperties: false
+        patients:
+          type: array
+          items:
+            type: object
+            properties:
+              displayName:
+                type: string
+              contextEnabled:
+                type: boolean
+              assistMode:
+                type: string
+                enum:
+                  - AUTO
+                  - ON
+                  - OFF
+            required:
+              - id
+              - displayName
+              - contextEnabled
+              - assistMode
+            additionalProperties: false
+      required:
+        - principal
+        - patients
+      additionalProperties: false
+    WordMap:
+      $id: "#/components/schemas/WordMap"
+      type: object
+      properties:
+        substitutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordMapEntry"
+        resolvedUtterances:
+          type: array
+          items:
+            type: object
+            properties:
+              fragment:
+                type: string
+              resolvedSentence:
+                type: string
+              hits:
+                type: number
+            required:
+              - id
+              - fragment
+              - resolvedSentence
+              - hits
+            additionalProperties: {}
+      required:
+        - substitutions
+        - resolvedUtterances
+      additionalProperties: false
+    Insights:
+      $id: "#/components/schemas/Insights"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        displayName:
+          type: string
+        stats:
+          type: object
+          properties:
+            fragmentsCount:
+              type: integer
+            totalConfirmations:
+              type: integer
+            confirmedCount:
+              type: integer
+            firstTryCount:
+              type: integer
+            firstTryResolutionRate:
+              type: number
+            overallResolutionRate:
+              type: number
+          required:
+            - fragmentsCount
+            - totalConfirmations
+            - confirmedCount
+            - firstTryCount
+            - firstTryResolutionRate
+            - overallResolutionRate
+          additionalProperties: false
+        topSubstitutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordMapEntry"
+      required:
+        - userId
+        - displayName
+        - stats
+        - topSubstitutions
+      additionalProperties: false
+    AnswerResult:
+      $id: "#/components/schemas/AnswerResult"
+      type: object
+      properties:
+        confirmation:
+          $ref: "#/components/schemas/Confirmation"
+        resolved:
+          type: boolean
+        finalSentence:
+          type: string
+        finalAudio:
+          type: string
+        nextQuestion:
+          type: string
+        fallbackQuestion:
+          type: string
+      required:
+        - confirmation
+        - resolved
+      additionalProperties: false
+    AssistResult:
+      $id: "#/components/schemas/AssistResult"
+      type: object
+      properties:
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        confirmationId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        resolved:
+          type: boolean
+        handledAsReply:
+          type: boolean
+      additionalProperties: false
+    RunDetail:
+      $id: "#/components/schemas/RunDetail"
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        pipeline:
+          type: string
+          enum:
+            - ASSIST
+            - INGEST
+            - LEARN
+        status:
+          type: string
+          enum:
+            - RUNNING
+            - AWAITING_CONFIRMATION
+            - SUCCEEDED
+            - FAILED
+        input: {}
+        output:
+          anyOf:
+            - {}
+            - type: "null"
+        contextUsed:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Step"
+        user:
+          type: object
+          properties:
+            displayName:
+              type: string
+            contextEnabled:
+              type: boolean
+            assistMode:
+              type: string
+              enum:
+                - AUTO
+                - ON
+                - OFF
+          required:
+            - id
+            - displayName
+            - contextEnabled
+            - assistMode
+          additionalProperties: false
+      required:
+        - id
+        - userId
+        - pipeline
+        - status
+        - input
+        - output
+        - contextUsed
+        - startedAt
+        - endedAt
+        - steps
+        - user
+      additionalProperties: false
+    EventType:
+      $id: "#/components/schemas/EventType"
+      type: string
+      enum:
+        - segment.received
+        - segment.classified
+        - hypotheses.generated
+        - run.started
+        - step.started
+        - step.completed
+        - step.failed
+        - memory.upserted
+        - confirmation.asked
+        - confirmation.answered
+        - assist.resolved
+        - assist.unresolved
+        - confirmation.expired
+        - wordmap.updated
+        - run.completed
+    EventEnvelope:
+      $id: "#/components/schemas/EventEnvelope"
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/EventType"
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        ts:
+          type: string
+          format: date-time
+        data:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - type
+        - userId
+        - ts
+        - data
+      additionalProperties: false
+    WebhookAck:
+      $id: "#/components/schemas/WebhookAck"
+      type: object
+      properties:
+        ok:
+          type: boolean
+          const: true
+        received:
+          type: integer
+        duplicates:
+          type: integer
+        ignored:
+          type: boolean
+        reason:
+          type: string
+      required:
+        - ok
+      additionalProperties: false
+    OmiStatus:
+      $id: "#/components/schemas/OmiStatus"
+      type: object
+      properties:
+        lastSegmentAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        lastSegmentSource:
+          anyOf:
+            - type: string
+              enum:
+                - OMI_REALTIME
+                - OMI_MEMORY
+                - SIMULATED
+            - type: "null"
+        segmentsLast5Min:
+          type: object
+          properties:
+            OMI_REALTIME:
+              type: integer
+            OMI_MEMORY:
+              type: integer
+            SIMULATED:
+              type: integer
+          required:
+            - OMI_REALTIME
+            - OMI_MEMORY
+            - SIMULATED
+          additionalProperties: false
+        lastRawWebhookAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        rawWebhooksLast5Min:
+          type: integer
+        webhookSecretConfigured:
+          type: boolean
+      required:
+        - lastSegmentAt
+        - lastSegmentSource
+        - segmentsLast5Min
+        - lastRawWebhookAt
+        - rawWebhooksLast5Min
+        - webhookSecretConfigured
+      additionalProperties: false
+    Liveness:
+      $id: "#/components/schemas/Liveness"
+      type: object
+      properties:
+        status:
+          type: string
+          const: ok
+      required:
+        - status
+      additionalProperties: false
+    Readiness:
+      $id: "#/components/schemas/Readiness"
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+        mockExternals:
+          type: boolean
+        db:
+          type: string
+          enum:
+            - ok
+            - down
+        redis:
+          type: string
+          enum:
+            - ok
+            - down
+        qdrant:
+          type: string
+          enum:
+            - ok
+            - down
+        lyzr:
+          type: string
+          example: configured
+      required:
+        - status
+        - mockExternals
+        - db
+        - redis
+        - qdrant
+        - lyzr
+      additionalProperties: false
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: unsaid_session
+      description: From POST /auth/login
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API_KEY, for scripts
+    webhookSecret:
+      type: apiKey
+      in: query
+      name: secret
+    webhookSecretHeader:
+      type: apiKey
+      in: header
+      name: x-omi-secret

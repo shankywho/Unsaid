@@ -1,0 +1,37 @@
+# Render Blueprint: API only. Postgres = Neon, Redis = Upstash, Qdrant = Qdrant Cloud (values marked sync:false are
+# entered in the Render dashboard; they are never stored in git).
+services:
+  - type: web
+    name: unsaid-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /readyz
+    preDeployCommand: npx prisma migrate deploy
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: MOCK_EXTERNALS, value: 'false' }
+      - { key: LLM_PROVIDER, value: lyzr }
+      - { key: TRUST_PROXY, value: '1' }
+      - { key: EMBEDDING_DIM, value: '1536' }
+      - { key: LYZR_INFERENCE_URL, value: 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/' }
+      - { key: API_KEY, generateValue: true }
+      - { key: SESSION_SECRET, generateValue: true }
+      - { key: OMI_WEBHOOK_SECRET, generateValue: true }
+      - { key: DATABASE_URL, sync: false }
+      - { key: REDIS_URL, sync: false }
+      - { key: QDRANT_URL, sync: false }
+      - { key: QDRANT_API_KEY, sync: false }
+      - { key: LYZR_API_KEY, sync: false }
+      - { key: LYZR_AGENT_UTTERANCE_CLASSIFIER_ID, sync: false }
+      - { key: LYZR_AGENT_FRAGMENT_ID, sync: false }
+      - { key: LYZR_AGENT_CONTEXT_EXTRACTOR_ID, sync: false }
+      - { key: LYZR_AGENT_HYPOTHESIS_ID, sync: false }
+      - { key: LYZR_AGENT_CONFIRM_ID, sync: false }
+      - { key: LYZR_AGENT_LEARNER_ID, sync: false }
+      - { key: LYZR_AGENT_EVAL_JUDGE_ID, sync: false }
+      - { key: OPENAI_API_KEY, sync: false }
+      - { key: DEMO_EMAIL, sync: false }
+      - { key: DEMO_PASSWORD, sync: false }
+      - { key: CORS_ORIGINS, sync: false }
+      - { key: PUBLIC_BASE_URL, sync: false }

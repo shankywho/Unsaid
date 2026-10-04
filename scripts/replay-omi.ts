@@ -5,6 +5,10 @@ import { env } from '../src/config/env';
 const BASE_URL = process.env.PUBLIC_BASE_URL || `http://localhost:${env.PORT || 8080}`;
 const DELAY_MS = Number(process.env.REPLAY_DELAY_MS) || 150;
 const OMI_UID = process.env.REPLAY_OMI_UID || 'omi_mohan_demo';
+// must match OMI_WEBHOOK_SECRET on the server when it is set
+const SECRET_QS = process.env.REPLAY_WEBHOOK_SECRET
+  ? `&secret=${encodeURIComponent(process.env.REPLAY_WEBHOOK_SECRET)}`
+  : '';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -35,7 +39,7 @@ export async function replay(): Promise<void> {
       })),
     };
 
-    const res = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}`, {
+    const res = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}${SECRET_QS}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -53,7 +57,7 @@ export async function replay(): Promise<void> {
   console.log('2. Simulating live patient aphasic fragment in assist mode:');
   console.log('   Patient speaks: "Sunday… Priya… cake… no"');
 
-  const fragmentRes = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}`, {
+  const fragmentRes = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}${SECRET_QS}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -77,7 +81,7 @@ export async function replay(): Promise<void> {
   console.log('\n3. Simulating patient confirmation response:');
   console.log('   Patient responds: "haan yes"');
 
-  const confirmRes = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}`, {
+  const confirmRes = await fetch(`${BASE_URL}/webhooks/omi/transcript?uid=${OMI_UID}${SECRET_QS}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

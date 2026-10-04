@@ -9,7 +9,7 @@
 
 Non-fluent (Broca's / expressive) aphasia following a stroke often impairs word retrieval and sentence formation while leaving comprehension intact. Speech emerges as telegraphic, fragmented words: _"Sunday… Priya… cake… no."_ For family and caregivers, interpreting these fragments can be challenging, but the missing context is often grounded in daily routines and ambient conversations.
 
-**Unsaid** assists individuals with non-fluent aphasia by grounding fragmented utterances in personal background context and learned vocabulary patterns.
+**Unsaid** is a communication aid, not a medical device, and it makes no diagnostic or therapeutic claims. It assists individuals with non-fluent aphasia by grounding fragmented utterances in personal background context and learned vocabulary patterns.
 
 ### Demo Persona: Mohan Lal Sharma & Family
 
@@ -26,261 +26,188 @@ Non-fluent (Broca's / expressive) aphasia following a stroke often impairs word 
 
 ```mermaid
 flowchart TD
-    subgraph Capture["Audio & Ambient Capture (Omi)"]
-        OmiWearable["Omi Wearable Microphone"] -->|Real-time Segments| WebhookTranscript["POST /webhooks/omi/transcript"]
-        OmiWearable -->|Full Conversation| WebhookMemory["POST /webhooks/omi/memory"]
+    subgraph Capture["Capture (Omi app: phone mic or wearable)"]
+        OmiApp["Omi real-time transcript"] -->|segments| WebhookTranscript["POST /webhooks/omi/transcript"]
+        OmiApp -->|finished conversation| WebhookMemory["POST /webhooks/omi/memory"]
     end
 
-    subgraph Ingestion["Ingest Pipeline (BullMQ + DAG)"]
-        WebhookTranscript -->|Non-patient speech| IngestBuffer["Redis Buffer (6 segs / 30s)"]
-        IngestBuffer --> IngestWorker["Ingest Worker"]
+    WebhookTranscript --> Dedupe["Idempotent store (RawWebhook + TranscriptSegment, dedupeKey)"]
+
+    subgraph Ingestion["INGEST pipeline (BullMQ + DAG)"]
+        Dedupe -->|ambient speech| IngestBuffer["Redis buffer (6 segments / 30 s idle)"]
+        IngestBuffer --> IngestWorker["Ingest worker"]
         WebhookMemory --> IngestWorker
-        IngestWorker --> LyzrContext["Lyzr context_extractor"]
-        LyzrContext --> EmbedFacts["OpenAI Embeddings"]
+        IngestWorker --> LyzrContext["Lyzr: context_extractor"]
+        LyzrContext --> EmbedFacts["OpenAI embeddings"]
         EmbedFacts --> QdrantMemory[("Qdrant: unsaid_memory")]
     end
 
-    subgraph Assist["Assist Pipeline (DAG Orchestrator)"]
-        WebhookTranscript -->|Patient speech| Classify["Utterance Classifier"]
-        Classify --> FragmentAnalyst["Lyzr fragment_analyst"]
-        FragmentAnalyst --> ParallelRetrieve{"Parallel Retrieval"}
-        ParallelRetrieve -->|Semantic Context| QdrantMemory
-        ParallelRetrieve -->|Learned Language| QdrantWordMap[("Qdrant: unsaid_wordmap")]
-        ParallelRetrieve --> Hypothesizer["Lyzr intent_hypothesizer"]
-        Hypothesizer --> Composer["Confirmation Composer"]
-        Composer --> TTS["OpenAI TTS Engine"]
-        TTS --> PendingConfirm["Pending Confirmation State"]
+    subgraph Assist["ASSIST pipeline (DAG)"]
+        Dedupe -->|patient speech| Classify["Lyzr: utterance_classifier"]
+        Dedupe -->|patient speech| FragmentAnalyst["Lyzr: fragment_analyst"]
+        Dedupe -->|patient speech| WordMapRetrieve["retrieve_wordmap"]
+        FragmentAnalyst --> MemoryRetrieve["retrieve_memory"]
+        MemoryRetrieve <--> QdrantMemory
+        WordMapRetrieve <--> QdrantWordMap[("Qdrant: unsaid_wordmap")]
+        Classify --> Hypothesizer["Lyzr: intent_hypothesizer"]
+        MemoryRetrieve --> Hypothesizer
+        WordMapRetrieve --> Hypothesizer
+        Hypothesizer --> TTS["OpenAI TTS"]
+        TTS --> PendingConfirm["Pending confirmation (Postgres + Redis TTL)"]
     end
 
-    subgraph Interaction["Confirmation & Spoken Delivery"]
-        PendingConfirm -->|Question Audio + Text| CaregiverConsole["Caregiver Console /debug"]
-        PendingConfirm -.->|Optional Ping| OmiNotifier["Omi Notifier"]
-        CaregiverConsole -->|Yes / No Reply| ConfirmHandler["Answer Handler"]
-        ConfirmHandler -->|Spoken Final Sentence| AudioStream["GET /v1/audio/:id"]
+    subgraph Interaction["Confirmation and speech"]
+        PendingConfirm -->|SSE /v1/stream| Frontend["Frontend (separate, planned)"]
+        Frontend -->|"POST /v1/confirmations/:id/answer"| ConfirmHandler["Confirmation state machine"]
+        ConfirmHandler -->|final sentence| AudioStream["GET /v1/audio/:id"]
     end
 
-    subgraph Feedback["Learning Loop"]
-        ConfirmHandler -->|Confirmed Intent| LearnWorker["Learn Worker (BullMQ)"]
-        LearnWorker --> LyzrLearner["Lyzr learner"]
-        LyzrLearner -->|Substitutions & Utterances| QdrantWordMap
-        LyzrLearner -->|Relational Mirror| PostgresWordMap[("PostgreSQL: WordMapEntry")]
+    subgraph Feedback["LEARN pipeline"]
+        ConfirmHandler -->|confirmed intent| LearnWorker["Learn worker (BullMQ)"]
+        LearnWorker --> LyzrLearner["Lyzr: learner (relation = SUBSTITUTION | TRANSLATION | FORMAT | ALIAS)"]
+        LyzrLearner -->|substitutions, resolved utterances| QdrantWordMap
+        LyzrLearner --> PostgresWordMap[("Postgres: WordMapEntry")]
     end
 ```
 
----
-
-## 2. Agent Topology (ASSIST DAG)
+## 2. Agent DAG (ASSIST)
 
 ```mermaid
 graph TD
-    A["classify<br/><i>(Utterance Classifier / Local Regex)</i>"] --> B["fragment_analyze<br/><i>(Lyzr fragment_analyst)</i>"]
-    B --> C["retrieve_memory<br/><i>(Qdrant unsaid_memory)</i>"]
-    B --> D["retrieve_wordmap<br/><i>(Qdrant unsaid_wordmap)</i>"]
-    C --> E["hypothesize<br/><i>(Lyzr intent_hypothesizer)</i>"]
-    D --> E
-    E --> F["compose_question<br/><i>(Lyzr confirmation_composer)</i>"]
-    F --> G["tts_question<br/><i>(TTS Audio Synthesis)</i>"]
-    G --> H["await_confirmation<br/><i>(Redis TTL + State Machine)</i>"]
-
-    classDef agent fill:#1f6feb22,stroke:#58a6ff,stroke-width:1px;
-    classDef storage fill:#23863622,stroke:#2ea043,stroke-width:1px;
-    class A,B,E,F agent;
-    class C,D,G,H storage;
+    A["classify<br/><i>Lyzr utterance_classifier</i>"]
+    B["fragment_analyze<br/><i>Lyzr fragment_analyst</i>"]
+    R["retrieve_raw_memory<br/><i>Qdrant, fragment text</i>"]
+    W["retrieve_wordmap<br/><i>Qdrant unsaid_wordmap</i>"]
+    C["retrieve_memory<br/><i>Qdrant, expanded queries, merged</i>"]
+    E["hypothesize<br/><i>Lyzr intent_hypothesizer + diversity check</i>"]
+    F["compose_question<br/><i>top hypothesis question</i>"]
+    G["tts_question<br/><i>OpenAI TTS</i>"]
+    H["await_confirmation<br/><i>Postgres + Redis TTL state machine</i>"]
+    B --> C
+    R --> C
+    A --> E
+    C --> E
+    W --> E
+    E --> F --> G --> H
+    H -. "yes" .-> L["LEARN: learner, upsert_wordmap"]
 ```
 
----
+`classify`, `fragment_analyze`, `retrieve_raw_memory` and `retrieve_wordmap` start together. With `contextEnabled=false`
+the three retrieval nodes are skipped (the ablation switch). INGEST is `load_known_people → extract_facts → embed → upsert_memory`.
+A "no" advances to the next of at most three hypotheses (`confirmation_composer` rewords it).
 
-## 3. Sponsor Integration Table
+## 3. Sponsor integrations
 
-| Sponsor Technology | Role & Integration                                                                                                                                                                                                                                                                                                                                        | Key File Paths                                                                                                                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Omi**            | Captures ambient household conversations and fragmented patient speech via real-time webhooks with tolerant JSON parsing and optional push notifications                                                                                                                                                                                                  | `src/adapters/omi/schemas.ts`<br/>`src/adapters/omi/notifier.ts`<br/>`src/http/routes/webhooks.ts`<br/>`scripts/replay-omi.ts`                                                             |
-| **Qdrant**         | High-performance vector storage for patient context facts (`unsaid_memory`) and personalized aphasic language maps (`unsaid_wordmap`) with multi-tenant filtering, deduplication on upsert (score ≥ 0.92), and 7-day half-life recency reranking                                                                                                          | `src/adapters/qdrant/collections.ts`<br/>`src/adapters/qdrant/client.ts`<br/>`src/memory/memoryStore.ts`<br/>`src/memory/wordMap.ts`                                                       |
-| **Lyzr**           | **Mandatory default live provider** for all 7 cognitive reasoning agents: utterance classification, fragment analysis, context extraction, 3-hypothesis intent generation with diversity enforcement, confirmation question composition, language learning, and LLM evaluation. (Groq LPU is maintained as an optional fallback via `LLM_PROVIDER=groq`). | `src/adapters/lyzr/httpClient.ts`<br/>`src/adapters/lyzr/mock.ts`<br/>`src/adapters/groq/client.ts`<br/>`src/agents/prompts/*.md`<br/>`src/agents/runAgent.ts`<br/>`scripts/lyzr-setup.ts` |
+| Sponsor    | Role                                                                                                                                                                                                   | Where                                                                                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Omi**    | Real-time transcripts (patient vs ambient via `is_user`) and finished conversations arrive by webhook; tolerant parser, raw payload storage, de-duplication, per-webhook secret, live status endpoint  | `src/adapters/omi/schemas.ts`, `src/adapters/omi/notifier.ts`, `src/http/routes/webhooks.ts`, `src/http/routes/omi.ts`, `src/ingest/recordSegment.ts`, `scripts/replay-omi.ts`, `docs/OMI_SETUP.md` |
+| **Qdrant** | `unsaid_memory` (personal facts: dedup merge at cosine ≥ 0.92, 7-day-half-life recency rerank) and `unsaid_wordmap` (learned substitutions and resolved utterances); every query filtered by `userId`  | `src/adapters/qdrant/collections.ts`, `src/adapters/qdrant/client.ts`, `src/memory/memoryStore.ts`, `src/memory/wordMap.ts`                                                                         |
+| **Lyzr**   | **Mandatory agent path.** Seven Studio agents (classifier, fragment analyst, context extractor, intent hypothesizer, confirmation composer, learner, eval judge) called through the Lyzr inference API | `src/adapters/lyzr/httpClient.ts`, `src/agents/runAgent.ts`, `src/agents/schemas.ts`, `src/agents/prompts/*.md`, `scripts/lyzr-setup.ts`                                                            |
 
----
+Groq (`LLM_PROVIDER=groq`, `src/adapters/groq/client.ts`) exists only as a developer fallback. `MockLyzrClient` powers CI and zero-key runs.
 
-## 4. Evaluation Suite & Context Ablation Benchmark
+## 4. Evaluation (live)
 
-Unsaid includes an automated evaluation harness (`scripts/eval.ts`) to benchmark intent resolution accuracy with **context ON vs context OFF**.
+Every number in this section comes from `pnpm eval` / `pnpm eval:learn` run against the live stack. Nothing was re-judged or
+graded by hand. Raw reports: [`docs/eval/live-eval-2026-10-04.json`](docs/eval/live-eval-2026-10-04.json) (+ `.md`) and
+[`docs/eval/live-learn-2026-10-04.json`](docs/eval/live-learn-2026-10-04.json).
 
-The test set consists of **32 synthetic test cases modeled on common non-fluent aphasia speech patterns** (`fixtures/fragments-eval.json`). 22 fragments (~70%) require personal household context (doctor's instructions, family visit timings, repair status, bills), while 10 fragments represent self-contained universal needs (water, sleep, cold/fan).
+| Item       | Value                                                                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date       | 2026-10-04                                                                                                                                      |
+| Agents     | Lyzr Studio agents, `gpt-4o-mini` backend (all 7, via `HttpLyzrClient`)                                                                         |
+| Judge      | `eval_judge` agent on Lyzr, one fixed rubric (same core action, key entities, compatible speech act)                                            |
+| Embeddings | OpenAI `text-embedding-3-small` (1536-d), Qdrant                                                                                                |
+| Data       | 32 synthetic fragments in `fixtures/fragments-eval.json` (22 need personal context, 10 self-contained) and a synthetic week of household speech |
 
-### Verified Live Lyzr Benchmark (Date: October 4, 2026)
+### Context ablation (32 fragments)
 
-Below are the empirical results from running `pnpm eval` with live LLM inference across all 7 agents on **Lyzr Studio v3** (`gpt-4o-mini` backend) using the standardized evaluation rubric:
+| Mode        | Top-1        | Top-3        | p50 latency | avg latency |
+| ----------- | ------------ | ------------ | ----------- | ----------- |
+| context ON  | 0.63 (20/32) | 0.94 (30/32) | 7,308 ms    | 7,480 ms    |
+| context OFF | 0.63 (20/32) | 0.72 (23/32) | 6,665 ms    | 7,152 ms    |
 
-```
-=====================================================================================
-  LIVE LLM EVALUATION BENCHMARK (Lyzr Studio v3, 2026-10-04)
-  Dataset: fixtures/fragments-eval.json (32 synthetic test cases)
-  Engine: OpenAI gpt-4o-mini via Lyzr Studio Agents
-  Judge: eval_judge via Lyzr (standardized clinical rubric)
-=====================================================================================
+| Subset (n)                  | ON top-1   | ON top-3   | OFF top-1  | OFF top-3  |
+| --------------------------- | ---------- | ---------- | ---------- | ---------- |
+| needs personal context (22) | 12 (54.5%) | 21 (95.5%) | 11 (50.0%) | 14 (63.6%) |
+| self-contained (10)         | 8 (80.0%)  | 9 (90.0%)  | 9 (90.0%)  | 9 (90.0%)  |
 
-mode         top1   top3   p50_latency_ms   avg_latency_ms   notes
-context ON   0.69   0.88   7082ms           7670ms           Live Lyzr reasoning + Qdrant memory + word-map
-context OFF  0.63   0.75   6708ms           7198ms           Live Lyzr baseline without memory retrieval
-=====================================================================================
-```
+**What this shows, and what it does not.** Retrieval from personal memory is what lifts the right meaning into the
+top three (63.6% → 95.5% on context-dependent fragments). It does **not** reliably make the first guess better: top-1 was
+identical in this run. An earlier live run of the same harness (a previous revision, finished concurrently with this one and
+without a provenance stamp, so it is not used for headline numbers) gave ON 0.69 / 0.88 and OFF 0.63 / 0.75, so the top-3 gain
+is consistent (+13 to +22 points) while the top-1 gain is within run-to-run noise. With 32 items, one fragment is 3 points.
 
-#### Accuracy Split by `requiresContext`:
+Per-step latency (context ON, p50): classify 1.5 s, fragment_analyze 2.3 s, hypothesize 4.7 s; retrieval 13 to 18 ms. The
+parallel DAG gives a p50 of **7.3 s end to end, which misses our 6 s target**; LLM generation in `hypothesize` and
+`fragment_analyze` dominates.
 
-```
-Mode         Subset                  Top-1 (Hits / N)       Top-3 (Hits / N)
------------- ----------------------- ---------------------- ----------------------
-Context ON   requiresContext = true  13/22 (59.1%)          19/22 (86.4%)
-Context ON   requiresContext = false 9/10  (90.0%)          9/10  (90.0%)
-Context OFF  requiresContext = true  11/22 (50.0%)          15/22 (68.2%)
-Context OFF  requiresContext = false 9/10  (90.0%)          9/10  (90.0%)
------------- ----------------------- ---------------------- ----------------------
-```
+### Learning loop (10 scenarios, `pnpm eval:learn`)
 
-#### Per-Step Latency Breakdown (Live Context ON Run):
+Each scenario confirms one fragment, then tests a **differently phrased** fragment with the same underlying word pattern, first
+try, before vs after the learner ran.
 
-```
-Step / Node               p50          Avg          Min        Max        Count  Execution Mode
-------------------------- ------------ ------------ ---------- ---------- -----  --------------------------------
-classify                  1,521ms      1,753ms      1,143ms    3,254ms    32     Parallel (runs at t=0)
-fragment_analyze          2,739ms      2,675ms      1,587ms    4,166ms    32     Parallel (runs at t=0)
-retrieve_raw_memory          15ms         16ms          5ms       45ms    32     Parallel retrieval at t=0
-retrieve_wordmap             15ms         16ms          6ms       46ms    32     Parallel retrieval at t=0
-retrieve_memory              17ms         21ms          9ms       57ms    32     Parallel retrieval (deduped)
-hypothesize               4,448ms      4,797ms      3,202ms   12,407ms    32     Sequential (Lyzr + diversity check)
-compose_question              3ms          3ms          1ms       10ms    32     Direct bypass for attempt 1
-tts_question                  3ms          3ms          1ms        6ms    32     Local audio synth
-await_confirmation           11ms         11ms          5ms       21ms    32     Prisma / Redis TTL
-eval_judge (eval suite)   1,489ms      1,770ms      1,072ms    4,521ms    47     Validation judge (offline grading)
-------------------------- ------------ ------------ ---------- ---------- -----  --------------------------------
-TOTAL ASSIST PIPELINE     7,082ms      7,670ms                                   Live end-to-end assist latency
-```
+| First-try accuracy | Before learning | After learning |
+| ------------------ | --------------- | -------------- |
+| Top-1 match        | 1/10 (10%)      | 3/10 (30%)     |
 
-#### Observations from the Ablation Results:
-
-- **Context Ablation Gap:** Context ON achieved **0.88 Top-3 / 0.69 Top-1**, compared to **0.75 Top-3 / 0.63 Top-1** for Context OFF. On personal context-dependent fragments (`requiresContext = true`), Top-3 accuracy improves from **68.2% to 86.4%** (+18.2% absolute gain), demonstrating that ambient memory grounding is essential for resolving telegraphic fragments like `"Sunday… Priya… cake… no"`, `"water… Ramesh… bill"`, and `"car… park… six"`. On self-contained universal needs (`requiresContext = false`), both modes achieve an identical **90.0%** baseline.
-- **Latency Profile:** The optimizations reduced total assist pipeline latency by ~3.8 seconds (~35% reduction). Question composition latency for the initial attempt was eliminated entirely (from ~1.5s to 3ms) by using the primary hypothesis question directly. The remaining ~7s latency is predominantly network and LLM token generation time from Lyzr Studio's cloud inference for `intent_hypothesizer` (~4.4s) and `fragment_analyst` (~2.7s).
-- **Rate-Limit Backoff Isolation:** Any 429 rate-limiting backoff delay is tracked independently via `AsyncLocalStorage` and excluded from step execution latency calculations.
-
----
-
-### Mock-Mode Smoke Test Baseline
-
-For rapid offline verification and CI without live API keys, `MOCK_EXTERNALS=true` provides deterministic smoke tests:
-
-```
-========================================================================
-  MOCK-MODE PIPELINE SMOKE TEST (pipeline smoke test, not a quality metric)
-  Dataset: fixtures/fragments-eval.json (32 synthetic clinical scenarios)
-========================================================================
-
-mode         top1   top3   avg_latency_ms   notes
-context ON   0.72   0.81   32ms             Mock deterministic rule-set + vector retrieval
-context OFF  0.31   0.69   19ms             Mock deterministic rule-set baseline (no retrieval)
-========================================================================
-```
-
----
+Two scenarios gained (a semantic substitution and a name alias), one held, seven stayed wrong. Treat +20 points on n=10 as a
+signal that the loop works mechanically, not as a measured effect size. The learner labels each pair `SUBSTITUTION`,
+`TRANSLATION`, `FORMAT` or `ALIAS`; only `SUBSTITUTION` is stored as a substitution (the live run rejected format pairs). The
+learner still stores some questionable pairs (for example a mis-paired token), which is one reason most scenarios did not gain.
 
 ## 5. Quickstart
 
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- Docker & Docker Compose
-
-### 1. Clone & Install
+Prerequisites: Node 20+, pnpm, Docker.
 
 ```bash
-git clone https://github.com/your-username/unsaid.git
-cd unsaid
 pnpm install
-```
-
-### 2. Start Infrastructure
-
-```bash
-docker compose up -d
-```
-
-Starts PostgreSQL (5442), Redis (6389), and Qdrant (6333).
-
-### 3. Setup Database, Qdrant Collections & Agents
-
-```bash
+docker compose up -d              # Postgres, Redis, Qdrant
+cp .env.example .env              # then edit; see below for zero-key mode
 pnpm db:migrate
-pnpm lyzr:setup
-pnpm seed
+pnpm seed                         # demo persona + a week of ambient memory
+pnpm dev                          # http://localhost:8080  (/debug dev console, /docs API docs)
 ```
 
-> **Switching Embedding Dimensions?** If switching from 256-dim mock embeddings to 1536-dim OpenAI embeddings (`text-embedding-3-small`), reset the Qdrant collections cleanly with:
+### Zero-key mock mode
+
+Set `MOCK_EXTERNALS=true` (and leave the API keys empty). Lyzr, embeddings (feature hashing), TTS (silent MP3) and the Omi
+notifier are replaced by deterministic mocks, so the whole pipeline runs offline. `pnpm test` always runs this way. Mock
+output is for plumbing only: `pnpm eval` refuses to run in mock mode unless `EVAL_ALLOW_MOCK=true`, and mock numbers are never reported.
+
+### Live mode
+
+Fill `LYZR_API_KEY`, `OPENAI_API_KEY`, set `MOCK_EXTERNALS=false`, `LLM_PROVIDER=lyzr`, run `pnpm lyzr:setup` (creates or updates the
+7 agents and writes their ids to `.env`), then `pnpm seed`. Changing `EMBEDDING_DIM` needs `pnpm qdrant:reset`.
+
+### Useful commands
+
+```bash
+pnpm test && pnpm lint && pnpm typecheck && pnpm build   # the CI gate
+pnpm eval            # live ablation   (docs/DEMO_SCRIPT.md for the demo flow)
+pnpm eval:learn      # live learning loop
+pnpm replay:omi      # replay the fixture week through the real webhook
+pnpm openapi         # regenerate docs/openapi.yaml
+```
+
+## 6. API
+
+OpenAPI 3.1: [`docs/openapi.yaml`](docs/openapi.yaml) (Swagger UI at `/docs` outside production). Event semantics, ordering and
+the confirmation state machine: [`docs/FRONTEND_CONTRACT.md`](docs/FRONTEND_CONTRACT.md).
+
+- **Auth:** `POST /auth/login` (demo account from env) sets an httpOnly session cookie; `POST /auth/logout`; `GET /v1/me`. Scripts use
+  `Authorization: Bearer <API_KEY>`. Webhooks use their own secret.
+- **Hardening:** helmet, CORS allowlist, rate limits (`/v1`, webhooks, login), 256 KB body limit, zod validation on every route, one error envelope.
+- **Ops:** `/healthz` (liveness), `/readyz` (db, redis, qdrant, Lyzr config), graceful shutdown (HTTP, SSE, BullMQ, Prisma, Redis), JSON logs that never contain transcript text at `info`.
+- **Docs:** [OMI_SETUP](docs/OMI_SETUP.md) · [DEPLOY](docs/DEPLOY.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [DECISIONS](DECISIONS.md)
+
+## 7. Frontend
+
+> Placeholder: a separate frontend is planned and will consume the contract above. Screenshots go here.
 >
-> ```bash
-> pnpm qdrant:reset
-> pnpm seed
-> ```
+> `docs/screenshots/` (live assist · trace view · memory · word map)
 
-### 4. Run Locally
-
-```bash
-pnpm dev
-```
-
-Open **`http://localhost:8080/debug`** in your browser to launch the live Caregiver & Observability Console!
-
----
-
-## 6. Running with Zero API Keys (`MOCK_EXTERNALS=true`)
-
-The entire Unsaid backend runs end-to-end without requiring external API keys. When `MOCK_EXTERNALS=true` (the default in `.env`):
-
-- **Lyzr Client:** Uses a deterministic, context-sensitive mock implementation (`MockLyzrClient`).
-- **Embeddings:** Uses a deterministic feature-hashing embedder (`MockEmbedder`).
-- **TTS:** Generates playable silent MP3 audio files (`MockTts`) so browser `<audio>` tags function.
-- **Omi Notifier:** No-ops safely without credentials.
-
-To run the ablation evaluation suite against mocks:
-
-```bash
-pnpm eval
-```
-
-To replay the demo session via real HTTP calls:
-
-```bash
-pnpm replay:omi
-```
-
----
-
-## 7. HTTP API Reference
-
-All `/v1/*` routes require `Authorization: Bearer <API_KEY>` (or `?api_key=` for SSE/audio). Webhooks accept optional `?secret=`.
-
-| Method   | Path                                    | Description                                                           |
-| -------- | --------------------------------------- | --------------------------------------------------------------------- |
-| `GET`    | `/healthz`                              | Health check for PostgreSQL, Redis, Qdrant, and adapters              |
-| `GET`    | `/debug`                                | Live interactive caregiver console & DAG trace visualizer             |
-| `POST`   | `/webhooks/omi/transcript?uid=&secret=` | Omi real-time transcript webhook (buffers ambient or triggers assist) |
-| `POST`   | `/webhooks/omi/memory?uid=&secret=`     | Omi full conversation memory webhook                                  |
-| `POST`   | `/v1/users`                             | Create patient profile (`{ displayName, caregiverName }`)             |
-| `GET`    | `/v1/users/:id`                         | Fetch patient profile and settings                                    |
-| `PATCH`  | `/v1/users/:id`                         | Update patient settings (`{ contextEnabled, assistMode }`)            |
-| `GET`    | `/v1/users/:id/wordmap`                 | List learned personal substitutions and resolved utterances           |
-| `GET`    | `/v1/users/:id/insights`                | Weekly stats: fragment counts, first-try resolution rate trend        |
-| `POST`   | `/v1/simulate/fragment`                 | Simulate patient aphasic fragment directly (`{ userId, text }`)       |
-| `POST`   | `/v1/simulate/segments`                 | Simulate ambient or patient speech segments                           |
-| `POST`   | `/v1/confirmations/:id/answer`          | Answer active confirmation (`{ answer: "yes" \| "no" }`)              |
-| `GET`    | `/v1/confirmations/:id`                 | Fetch confirmation state                                              |
-| `GET`    | `/v1/runs?userId=&pipeline=`            | List execution traces                                                 |
-| `GET`    | `/v1/runs/:id`                          | Detailed DAG run trace with steps, latencies, and Qdrant hits         |
-| `GET`    | `/v1/memory?userId=&q=`                 | List or semantically search personal memory facts                     |
-| `DELETE` | `/v1/memory/:pointId?userId=`           | Delete a specific memory fact (privacy control)                       |
-| `POST`   | `/v1/memory/purge`                      | Purge all memory facts and word map entries for a patient             |
-| `GET`    | `/v1/stream?userId=`                    | Server-Sent Events (SSE) live pipeline observability feed             |
-| `GET`    | `/v1/audio/:id`                         | Serve synthesized MP3 audio for questions and resolved speech         |
-
----
+`public/debug.html` is a developer console only (not served in production).
 
 ## 8. Privacy, Safety, and Consent
 
@@ -291,8 +218,15 @@ All `/v1/*` routes require `Authorization: Bearer <API_KEY>` (or `?api_key=` for
 
 ---
 
-## 9. Limitations & Next Steps
+## 9. Limitations (honest list)
 
-1. **Acoustic Nuances:** Currently relies on transcribed text from Omi. Future versions will integrate vocal tone and prosody to detect emotional state and urgency.
-2. **Multi-Party Disambiguation:** In loud environments with overlapping speakers, speaker diarization accuracy from wearable hardware remains critical.
-3. **On-Device Local Inference:** Exploring local edge models for latency-critical confirmation classification to achieve sub-500ms interaction loops on wearable hardware.
+1. **Small, synthetic, self-authored benchmark.** 32 fragments and 10 learning scenarios written by the project, judged by an LLM
+   (gpt-4o-mini via Lyzr) from the same family as the system under test. No real patient data and no clinician review. Results show the
+   mechanism works, not clinical effectiveness.
+2. **Top-1 is not improved by context in our live run**; the benefit is in top-3 coverage (see section 4).
+3. **Latency is 7 s p50**, above the 6 s goal; unsuitable for natural turn-taking without further optimisation.
+4. **The learner is imperfect:** it can store wrong pairs, and the learning gain is measured on only 10 scenarios.
+5. **Omi payload shape is verified against documentation only** (bare array, `uid`/`session_id` in the query). It has not yet been confirmed against a live Omi session in this repo; raw payloads are stored so any difference is easy to fix.
+6. **Speech-to-text errors propagate:** Omi's transcript of disordered speech may already be wrong before Unsaid sees it.
+7. **Single demo account, in-memory rate limiting** (per instance), local-disk audio. Not multi-tenant SaaS hardening.
+8. **No on-device processing:** transcripts go to Omi, Lyzr/OpenAI and the configured hosts. Consent and disclosure are the operator's responsibility.
