@@ -6,3 +6,8 @@ useDefault = true
 [[allowlists]]
 description = "Placeholder values in tracked example/doc files"
 paths = ['''\.env\.example$''', '''\.env\.prod\.example$''']
+
+[[allowlists]]
+description = "Throwaway credentials for the local mock-mode e2e backend (never valid anywhere else)"
+paths = ['''web/playwright\.config\.ts$''', '''web/e2e/.*''']
+regexes = ['''e2e-api-key-0123456789''']
