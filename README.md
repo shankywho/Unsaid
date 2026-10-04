@@ -108,20 +108,32 @@ The test set consists of **32 synthetic test cases modeled on common non-fluent 
 
 ### Verified Live Lyzr Benchmark (Date: October 4, 2026)
 
-Below are the empirical results from running `pnpm eval` with live LLM inference across all 7 agents on **Lyzr Studio v3** (`gpt-4o-mini` backend):
+Below are the empirical results from running `pnpm eval` with live LLM inference across all 7 agents on **Lyzr Studio v3** (`gpt-4o-mini` backend) using the standardized evaluation rubric:
 
 ```
 =====================================================================================
   LIVE LLM EVALUATION BENCHMARK (Lyzr Studio v3, 2026-10-04)
   Dataset: fixtures/fragments-eval.json (32 synthetic test cases)
   Engine: OpenAI gpt-4o-mini via Lyzr Studio Agents
-  Judge: eval_judge via Lyzr
+  Judge: eval_judge via Lyzr (standardized clinical rubric)
 =====================================================================================
 
 mode         top1   top3   p50_latency_ms   avg_latency_ms   notes
-context ON   0.38   0.44   7126ms           7617ms           Live Lyzr reasoning + Qdrant memory + word-map
-context OFF  0.28   0.31   6279ms           6260ms           Live Lyzr baseline without memory retrieval
+context ON   0.69   0.88   7082ms           7670ms           Live Lyzr reasoning + Qdrant memory + word-map
+context OFF  0.63   0.75   6708ms           7198ms           Live Lyzr baseline without memory retrieval
 =====================================================================================
+```
+
+#### Accuracy Split by `requiresContext`:
+
+```
+Mode         Subset                  Top-1 (Hits / N)       Top-3 (Hits / N)
+------------ ----------------------- ---------------------- ----------------------
+Context ON   requiresContext = true  13/22 (59.1%)          19/22 (86.4%)
+Context ON   requiresContext = false 9/10  (90.0%)          9/10  (90.0%)
+Context OFF  requiresContext = true  11/22 (50.0%)          15/22 (68.2%)
+Context OFF  requiresContext = false 9/10  (90.0%)          9/10  (90.0%)
+------------ ----------------------- ---------------------- ----------------------
 ```
 
 #### Per-Step Latency Breakdown (Live Context ON Run):
@@ -129,23 +141,24 @@ context OFF  0.28   0.31   6279ms           6260ms           Live Lyzr baseline 
 ```
 Step / Node               p50          Avg          Min        Max        Count  Execution Mode
 ------------------------- ------------ ------------ ---------- ---------- -----  --------------------------------
-classify                  1,447ms      1,720ms      1,109ms    3,382ms    32     Parallel (runs at t=0)
-fragment_analyze          2,375ms      2,546ms      1,429ms    5,552ms    32     Parallel (runs at t=0)
-retrieve_wordmap              7ms          8ms          4ms       32ms    32     Parallel (runs at t=0)
-retrieve_memory              18ms         19ms         11ms       29ms    32     Parallel retrieval (Qdrant)
-hypothesize               4,795ms      4,952ms      3,294ms    7,393ms    32     Sequential (Lyzr + diversity check)
-compose_question              2ms          2ms          1ms        4ms    32     Direct bypass for attempt 1
-tts_question                  3ms          3ms          1ms        4ms    32     Local audio synth
-await_confirmation            8ms          8ms          4ms       23ms    32     Prisma / Redis TTL
-eval_judge (eval suite)   1,540ms      1,838ms      1,094ms    3,708ms    71     Validation judge (offline grading)
+classify                  1,521ms      1,753ms      1,143ms    3,254ms    32     Parallel (runs at t=0)
+fragment_analyze          2,739ms      2,675ms      1,587ms    4,166ms    32     Parallel (runs at t=0)
+retrieve_raw_memory          15ms         16ms          5ms       45ms    32     Parallel retrieval at t=0
+retrieve_wordmap             15ms         16ms          6ms       46ms    32     Parallel retrieval at t=0
+retrieve_memory              17ms         21ms          9ms       57ms    32     Parallel retrieval (deduped)
+hypothesize               4,448ms      4,797ms      3,202ms   12,407ms    32     Sequential (Lyzr + diversity check)
+compose_question              3ms          3ms          1ms       10ms    32     Direct bypass for attempt 1
+tts_question                  3ms          3ms          1ms        6ms    32     Local audio synth
+await_confirmation           11ms         11ms          5ms       21ms    32     Prisma / Redis TTL
+eval_judge (eval suite)   1,489ms      1,770ms      1,072ms    4,521ms    47     Validation judge (offline grading)
 ------------------------- ------------ ------------ ---------- ---------- -----  --------------------------------
-TOTAL ASSIST PIPELINE     7,126ms      7,617ms                                   Live end-to-end assist latency
+TOTAL ASSIST PIPELINE     7,082ms      7,670ms                                   Live end-to-end assist latency
 ```
 
 #### Observations from the Ablation Results:
 
-- **Context Ablation Gap:** Context ON achieved **0.38 Top-1 / 0.44 Top-3**, compared to **0.28 Top-1 / 0.31 Top-3** for Context OFF (+10% Top-1, +13% Top-3). Without ambient memory facts, telegraphic tokens like `"Sunday… Priya… cake… no"` or `"the… the thing… eyes… broken"` cannot be reliably resolved to specific household events or personal items.
-- **Latency Profile:** The optimizations reduced total assist pipeline latency by ~3.8 seconds (~35% reduction). Question composition latency for the initial attempt was eliminated entirely (from ~1.5s to 2ms) by using the primary hypothesis question directly. The remaining ~7s latency is predominantly network and LLM token generation time from Lyzr Studio's cloud inference for `intent_hypothesizer` (~4.8s) and `fragment_analyst` (~2.4s).
+- **Context Ablation Gap:** Context ON achieved **0.88 Top-3 / 0.69 Top-1**, compared to **0.75 Top-3 / 0.63 Top-1** for Context OFF. On personal context-dependent fragments (`requiresContext = true`), Top-3 accuracy improves from **68.2% to 86.4%** (+18.2% absolute gain), demonstrating that ambient memory grounding is essential for resolving telegraphic fragments like `"Sunday… Priya… cake… no"`, `"water… Ramesh… bill"`, and `"car… park… six"`. On self-contained universal needs (`requiresContext = false`), both modes achieve an identical **90.0%** baseline.
+- **Latency Profile:** The optimizations reduced total assist pipeline latency by ~3.8 seconds (~35% reduction). Question composition latency for the initial attempt was eliminated entirely (from ~1.5s to 3ms) by using the primary hypothesis question directly. The remaining ~7s latency is predominantly network and LLM token generation time from Lyzr Studio's cloud inference for `intent_hypothesizer` (~4.4s) and `fragment_analyst` (~2.7s).
 - **Rate-Limit Backoff Isolation:** Any 429 rate-limiting backoff delay is tracked independently via `AsyncLocalStorage` and excluded from step execution latency calculations.
 
 ---
