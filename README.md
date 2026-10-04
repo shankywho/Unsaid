@@ -203,11 +203,24 @@ the confirmation state machine: [`docs/FRONTEND_CONTRACT.md`](docs/FRONTEND_CONT
 
 ## 7. Frontend
 
-> Placeholder: a separate frontend is planned and will consume the contract above. Screenshots go here.
->
-> `docs/screenshots/` (live assist · trace view · memory · word map)
+A React + Vite + TypeScript app in [`web/`](web): marketing landing page at `/`, login at `/login`, and the product console at `/app`
+(Live, Memory, Word map, Runs, Eval, Settings). The API serves the built app, so `pnpm build` in `web/` then `pnpm dev` at the root gives one origin.
 
-`public/debug.html` is a developer console only (not served in production).
+```bash
+cd web && pnpm install && pnpm dev      # Vite on :5173, proxying the API on :8080 (needs `pnpm eval` once for the landing numbers)
+cd web && pnpm build                    # -> web/dist, served by the API in production
+cd web && pnpm e2e                      # Playwright against a MOCK_EXTERNALS backend; includes axe on every route
+```
+
+| Landing (resolved frame of the live product demo)  | Live console, after a confirmed sentence                    |
+| -------------------------------------------------- | ----------------------------------------------------------- |
+| ![Landing page](docs/screenshots/landing-hero.png) | ![Live console](docs/screenshots/console-live-resolved.png) |
+
+More: [question state](docs/screenshots/console-live-question.png) · [full landing page](docs/screenshots/landing-full.png) · [375px mobile](docs/screenshots/landing-mobile-features.png).
+Design system and every component: `/app/_kitchen`. Lighthouse on `/` (mobile, throttled): performance 99, accessibility 100, best practices 100.
+The landing demo is scripted (labelled as such) but renders the same components as the console; its timings are the medians from the latest live eval.
+
+`public/debug.html` remains a developer console only (not served in production).
 
 ## 8. Privacy, Safety, and Consent
 

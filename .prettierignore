@@ -8,3 +8,10 @@ prisma/migrations
 UNSAID_BUILD.md
 src/agents/prompts
 docs/openapi.yaml
+web/dist
+web/src/api/schema.d.ts
+web/src/generated
+web/.lighthouse
+web/test-results
+web/playwright-report
+docs/screenshots

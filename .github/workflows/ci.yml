@@ -52,6 +52,44 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  web:
+    name: web · typecheck · build · e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: unsaid, POSTGRES_PASSWORD: unsaid, POSTGRES_DB: unsaid }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U unsaid" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+      qdrant:
+        image: qdrant/qdrant:v1.12.4
+        ports: ['6333:6333']
+    env:
+      DATABASE_URL: postgresql://unsaid:unsaid@localhost:5432/unsaid
+      REDIS_URL: redis://localhost:6379
+      QDRANT_URL: http://localhost:6333
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile # API deps (the e2e backend runs from the repo root)
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: pnpm gen:api && git diff --exit-code src/api/schema.d.ts
+        working-directory: web
+      - run: pnpm build # includes typecheck; reads docs/eval
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: pnpm e2e # login -> fragment -> trace -> YES, memory delete, context toggle, axe on every route
+        working-directory: web
+
   docker:
     name: docker build
     runs-on: ubuntu-latest

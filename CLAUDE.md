@@ -14,7 +14,7 @@ Spec: `UNSAID_BUILD.md`. Decision log: `DECISIONS.md`.
 - **Never report results not produced by `pnpm eval` with the `eval_judge` agent (via Lyzr).** Mock-mode numbers are
   smoke tests and must be labelled as such. Never self-grade.
 - **No medical claims.** Unsaid is a communication aid, not a diagnostic or therapeutic device.
-- No frontend work in this repo. `public/debug.html` is a dev tool only.
+- Frontend lives in `/web` (React + Vite). Landing numbers are read from the newest **live** eval report at build time: never hardcode or round them. Amber is only for live/voice states and resolved sentences; patient fragments are always muted mono, resolved sentences always large serif. `public/debug.html` is a dev tool only.
 
 ## Stack
 
@@ -23,18 +23,20 @@ Lyzr Studio agents (7), OpenAI embeddings + TTS, pino logging, vitest + supertes
 
 ## Commands
 
-| Command                                 | Purpose                                                      |
-| --------------------------------------- | ------------------------------------------------------------ |
-| `docker compose up -d`                  | Postgres, Redis, Qdrant (host ports overridable in `.env`)   |
-| `pnpm i`                                | install (runs `prisma generate`)                             |
-| `pnpm db:migrate`                       | apply Prisma migrations                                      |
-| `pnpm dev` / `pnpm build && pnpm start` | run API (+ in-process workers)                               |
-| `pnpm test`                             | vitest, always with mocked externals, real local docker deps |
-| `pnpm lint` / `pnpm exec tsc --noEmit`  | eslint+prettier / typecheck                                  |
-| `pnpm seed`                             | seed demo persona + ambient memory                           |
-| `pnpm lyzr:setup`                       | create/update the 7 Lyzr agents                              |
-| `pnpm eval` / `pnpm eval:learn`         | live ablation eval / learning-loop eval (needs live keys)    |
-| `pnpm replay:omi`                       | replay fixtures through the Omi webhook                      |
+| Command                                          | Purpose                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `docker compose up -d`                           | Postgres, Redis, Qdrant (host ports overridable in `.env`)   |
+| `pnpm i`                                         | install (runs `prisma generate`)                             |
+| `pnpm db:migrate`                                | apply Prisma migrations                                      |
+| `pnpm dev` / `pnpm build && pnpm start`          | run API (+ in-process workers)                               |
+| `pnpm test`                                      | vitest, always with mocked externals, real local docker deps |
+| `pnpm lint` / `pnpm exec tsc --noEmit`           | eslint+prettier / typecheck                                  |
+| `pnpm seed`                                      | seed demo persona + ambient memory                           |
+| `pnpm lyzr:setup`                                | create/update the 7 Lyzr agents                              |
+| `pnpm eval` / `pnpm eval:learn`                  | live ablation eval / learning-loop eval (needs live keys)    |
+| `cd web && pnpm dev` / `pnpm build` / `pnpm e2e` | frontend dev server / static build / Playwright + axe        |
+| `cd web && pnpm gen:api`                         | regenerate typed API client from docs/openapi.yaml           |
+| `pnpm replay:omi`                                | replay fixtures through the Omi webhook                      |
 
 ## Conventions
 

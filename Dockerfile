@@ -21,6 +21,15 @@ COPY src ./src
 COPY scripts ./scripts
 RUN pnpm build
 
+# ---------- web: static frontend (reads docs/eval at build time) ----------
+FROM base AS web-build
+WORKDIR /build/web
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+COPY web/ ./
+COPY docs/eval /build/docs/eval
+RUN pnpm build
+
 # ---------- prod deps only ----------
 FROM base AS prod-deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -31,10 +40,11 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM node:${NODE_VERSION}-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates tini \
   && rm -rf /var/lib/apt/lists/*
-ENV NODE_ENV=production PORT=8080 AUDIO_DIR=/data/audio
+ENV NODE_ENV=production PORT=8080 AUDIO_DIR=/data/audio WEB_DIST=/app/web/dist
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=web-build /build/web/dist ./web/dist
 COPY package.json ./
 COPY prisma ./prisma
 # compiled scripts resolve fixtures relative to dist/

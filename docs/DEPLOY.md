@@ -91,6 +91,21 @@ curl -H "Authorization: Bearer $API_KEY" -X POST $API/v1/simulate/fragment \
 
 Then point Omi at `$API/webhooks/omi/transcript/<OMI_WEBHOOK_SECRET>` ([OMI_SETUP.md](./OMI_SETUP.md)).
 
+## 6b. Frontend (landing page and console)
+
+The Docker image already contains the built frontend (`web/dist`, built from `/web` in the `web-build` stage) and the API serves it
+at `/` (landing), `/login` and `/app/*` with SPA fallback, so **one service serves everything on one origin**. That is the
+recommended setup: the session cookie stays first-party and `CORS_ORIGINS` can stay empty.
+
+- The landing page's eval numbers are read from the newest live report in `docs/eval/` (or `eval-results/`) at **build** time. After a
+  new `pnpm eval`, copy the report into `docs/eval/` and redeploy.
+- Optional build-time variables (set them as Docker build args / platform build variables, they are baked into the bundle):
+  `VITE_DEMO_VIDEO_URL` (YouTube or Loom share link; empty shows a poster) and `VITE_GITHUB_URL`.
+- Vercel instead: import the repo with **Root Directory `web`** and enable "Include source files outside of the Root Directory"
+  (the build reads `../docs/eval`). Edit the two `YOUR-API-HOST` rewrites in `web/vercel.json`. Because the rewrites proxy `/v1` and
+  `/auth` through Vercel, the browser still sees one origin. Server-sent events pass through the rewrite but long streams can be cut by
+  Vercel's function time limits; the combined Docker deployment avoids that.
+
 ## 7. Self-hosting alternative
 
 `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build` brings up API + Postgres + Redis + Qdrant on
