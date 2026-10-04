@@ -6,6 +6,7 @@ import { upsertResolvedUtterance, upsertSubstitution, isTrueSubstitution } from 
 import { bus } from '../tracing/events';
 import { adapters } from '../adapters';
 import { logger } from '../lib/logger';
+import { cleanConfirmedSentence } from '../lib/sentences';
 
 export interface LearnPipelineInput {
   userId: string;
@@ -16,7 +17,8 @@ export interface LearnPipelineInput {
 }
 
 export async function runLearnPipeline(input: LearnPipelineInput): Promise<{ runId: string }> {
-  const { userId, fragment, confirmedSentence, rejectedHypotheses = [] } = input;
+  const { userId, fragment, rejectedHypotheses = [] } = input;
+  const confirmedSentence = cleanConfirmedSentence(input.confirmedSentence) ?? undefined;
   const runId = await startRun(userId, 'LEARN', { fragment, confirmedSentence, rejectedHypotheses }, true);
 
   try {

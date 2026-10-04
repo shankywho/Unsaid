@@ -1,0 +1,185 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-04T09:21:11.201Z"
+ },
+ "title": "Unsaid Redesign",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 3500,
+   "title": "Design system",
+   "expand": "fill"
+  },
+  "Handoff.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1100,
+   "h": 2450,
+   "title": "Handoff notes"
+  },
+  "Landing.dc.html": {
+   "x": 0,
+   "y": 3820,
+   "w": 1440,
+   "h": 6500,
+   "title": "Landing · desktop 1440",
+   "expand": "fill"
+  },
+  "LandingMobile.dc.html": {
+   "x": 1520,
+   "y": 3820,
+   "w": 375,
+   "h": 7900,
+   "title": "Landing · mobile 375",
+   "expand": "fill"
+  },
+  "LiveIdle.dc.html": {
+   "x": 0,
+   "y": 12040,
+   "w": 1440,
+   "h": 900,
+   "title": "Live · a. idle, listening"
+  },
+  "LiveReasoning.dc.html": {
+   "x": 1520,
+   "y": 12040,
+   "w": 1440,
+   "h": 900,
+   "title": "Live · b. reasoning"
+  },
+  "LiveQuestion.dc.html": {
+   "x": 3040,
+   "y": 12040,
+   "w": 1440,
+   "h": 900,
+   "title": "Live · c. question asked"
+  },
+  "LiveConfirmed.dc.html": {
+   "x": 4560,
+   "y": 12040,
+   "w": 1440,
+   "h": 900,
+   "title": "Live · d. confirmed"
+  },
+  "Live1024.dc.html": {
+   "x": 0,
+   "y": 13260,
+   "w": 1024,
+   "h": 800,
+   "title": "Live · 1024 (question)"
+  },
+  "Login.dc.html": {
+   "x": 1104,
+   "y": 13260,
+   "w": 1440,
+   "h": 900,
+   "title": "Login"
+  },
+  "LiveStates.dc.html": {
+   "x": 2624,
+   "y": 13260,
+   "w": 1440,
+   "h": 780,
+   "title": "Live · empty, loading, error"
+  },
+  "MemoryStates.dc.html": {
+   "x": 4144,
+   "y": 13260,
+   "w": 1440,
+   "h": 720,
+   "title": "Memory · empty, loading, error"
+  },
+  "Memory.dc.html": {
+   "x": 0,
+   "y": 14480,
+   "w": 1440,
+   "h": 900,
+   "title": "Memory (purge dialog open)"
+  },
+  "WordMap.dc.html": {
+   "x": 1520,
+   "y": 14480,
+   "w": 1440,
+   "h": 900,
+   "title": "Word map"
+  },
+  "Runs.dc.html": {
+   "x": 3040,
+   "y": 14480,
+   "w": 1440,
+   "h": 900,
+   "title": "Runs + trace"
+  },
+  "Eval.dc.html": {
+   "x": 4560,
+   "y": 14480,
+   "w": 1440,
+   "h": 900,
+   "title": "Eval"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Handoff.dc.html",
+  "Landing.dc.html",
+  "LandingMobile.dc.html",
+  "LiveIdle.dc.html",
+  "LiveReasoning.dc.html",
+  "LiveQuestion.dc.html",
+  "LiveConfirmed.dc.html",
+  "Live1024.dc.html",
+  "Login.dc.html",
+  "LiveStates.dc.html",
+  "MemoryStates.dc.html",
+  "Memory.dc.html",
+  "WordMap.dc.html",
+  "Runs.dc.html",
+  "Eval.dc.html"
+ ],
+ "notes": {
+  "n1": {
+   "x": 0,
+   "y": -260,
+   "text": "Foundations and handoff",
+   "kind": "title1",
+   "maxW": 2620
+  },
+  "n2": {
+   "x": 0,
+   "y": 3560,
+   "text": "Landing page",
+   "kind": "title1",
+   "maxW": 1895
+  },
+  "n3": {
+   "x": 0,
+   "y": 11780,
+   "text": "Console · Live, four states",
+   "kind": "title1",
+   "maxW": 6000
+  },
+  "n4": {
+   "x": 0,
+   "y": 13000,
+   "text": "Live at 1024, sign in, states",
+   "kind": "title1",
+   "maxW": 5584
+  },
+  "n5": {
+   "x": 0,
+   "y": 14220,
+   "text": "Console · Memory, Word map, Runs, Eval",
+   "kind": "title1",
+   "maxW": 6000
+  }
+ },
+ "designSystems": []
+}

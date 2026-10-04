@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Handoff notes</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="unsaid.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>body{margin:0;background:#0A0A0B}</style>
+</helmet>
+<div class="u " style="width:1100px;min-height:2450px"><div style="padding:64px 56px">
+<h1 class="d3">Handoff notes</h1><p class="lead" style="margin-top:10px;max-width:640px;font-size:17px">Tokens, then where each piece lands in the existing React and Tailwind code. No routes or data change.</p>
+<h2 class="h4" style="margin:44px 0 14px">1. Tokens as CSS variables</h2><div class="code">:root {
+  --canvas: #0A0A0B;   --surface: #111113;   --raised: #17171A;
+  --line: rgb(255 255 255 / .07);   --line-strong: rgb(255 255 255 / .11);
+  --ink: #EDEDEF;   --muted: #8B8B93;   --faint: #7A7A82;   --ghost: #5A5A62;
+  --accent: #5EEAD4;   --accent-ink: #04120F;
+  --accent-soft: rgb(94 234 212 / .10);   --accent-line: rgb(94 234 212 / .28);
+  --danger: #F28B82;   --danger-soft: rgb(242 139 130 / .10);
+  --radius-sm: 6px;   --radius-md: 8px;   --radius-lg: 10px;
+}</div>
+<h2 class="h4" style="margin:44px 0 14px">2. Tailwind v4 theme</h2><div class="code">/* web/src/design/tokens.css  (Tailwind v4, @theme replaces the light tokens) */
+@theme {
+  --color-canvas: #0A0A0B;   --color-surface: #111113;   --color-raised: #17171A;
+  --color-line: rgb(255 255 255 / .07);   --color-line-strong: rgb(255 255 255 / .11);
+  --color-ink: #EDEDEF;   --color-muted: #8B8B93;   --color-faint: #7A7A82;   --color-ghost: #5A5A62;
+  --color-accent: #5EEAD4;   --color-accent-ink: #04120F;
+  --color-accent-soft: rgb(94 234 212 / .10);   --color-accent-line: rgb(94 234 212 / .28);
+  --color-danger: #F28B82;   --color-danger-soft: rgb(242 139 130 / .10);
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;   /* drop --font-serif */
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --radius-sm: 6px;   --radius-md: 8px;   --radius-lg: 10px;
+}
+html { background: var(--color-canvas); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }</div>
+<h2 class="h4" style="margin:44px 0 14px">3. Component map</h2><div class="win" style="background:transparent"><table class="tbl"><thead><tr><th>Piece</th><th>Component</th><th>Route</th><th>Note</th></tr></thead><tbody><tr><td style="font-weight:500;width:230px">Landing hero shot</td><td class="mono" style="font-size:12px;width:270px">landing/ProductWindow.tsx + demo.ts</td><td class="mono tx3" style="font-size:12px;width:150px">/</td><td class="tx2" style="font-size:13.5px">Replace the light window with the dark 3-column shot. Keep SCRIPT and finalState(); layers: idle, thinking, question, sentence.</td></tr><tr><td style="font-weight:500;width:230px">Built with, How it works, Private, FAQ, Footer</td><td class="mono" style="font-size:12px;width:270px">landing/Landing.tsx + mocks.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/</td><td class="tx2" style="font-size:13.5px">mocks.tsx supplies the five crops. Alternate rows with a flip class; no scroll-gated visibility.</td></tr><tr><td style="font-weight:500;width:230px">Results</td><td class="mono" style="font-size:12px;width:270px">landing/evalData.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/</td><td class="tx2" style="font-size:13.5px">Numbers, model and date read from generated/eval.json at build. Never typed in.</td></tr><tr><td style="font-weight:500;width:230px">Sidebar, top bar, picker, Memory switch, Omi chip</td><td class="mono" style="font-size:12px;width:270px">console/Shell.tsx, patient.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/app/*</td><td class="tx2" style="font-size:13.5px">Sidebar NAV array stays. Drop the connected banner; state lives in the chip (Omi live / Simulated / Offline).</td></tr><tr><td style="font-weight:500;width:230px">Transcript, Reasoning, Conversation</td><td class="mono" style="font-size:12px;width:270px">console/Live.tsx, liveState.ts, components.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/app/live</td><td class="tx2" style="font-size:13.5px">Reducer untouched. step.* events map to timeline row status; retrieval[] to fact rows; hypotheses.generated to hypothesis rows.</td></tr><tr><td style="font-weight:500;width:230px">Question, YES / NO, Confirmed</td><td class="mono" style="font-size:12px;width:270px">console/Live.tsx (Conversation)</td><td class="mono tx3" style="font-size:12px;width:150px">/app/live</td><td class="tx2" style="font-size:13.5px">confirmation.asked, assist.resolved, assist.unresolved. Y and N shortcuts stay.</td></tr><tr><td style="font-weight:500;width:230px">Memory list, purge dialog</td><td class="mono" style="font-size:12px;width:270px">console/Memory.tsx, design/dialog.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/app/memory</td><td class="tx2" style="font-size:13.5px">Typed confirmation word PURGE gates the danger button.</td></tr><tr><td style="font-weight:500;width:230px">Word map table</td><td class="mono" style="font-size:12px;width:270px">console/WordMapPage.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/app/wordmap</td><td class="tx2" style="font-size:13.5px">Same data, table with hit bars.</td></tr><tr><td style="font-weight:500;width:230px">Runs list and trace</td><td class="mono" style="font-size:12px;width:270px">console/Runs.tsx (list and RunPage)</td><td class="mono tx3" style="font-size:12px;width:150px">/app/runs, /app/runs/:id</td><td class="tx2" style="font-size:13.5px">RunPage reuses the Live timeline component.</td></tr><tr><td style="font-weight:500;width:230px">Eval</td><td class="mono" style="font-size:12px;width:270px">console/EvalPage.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/app/eval</td><td class="tx2" style="font-size:13.5px">Provenance stamp from generated/eval.json provenance.</td></tr><tr><td style="font-weight:500;width:230px">Login</td><td class="mono" style="font-size:12px;width:270px">console/Login.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">/login</td><td class="tx2" style="font-size:13.5px">POST /auth/login. 401 anywhere redirects here.</td></tr><tr><td style="font-weight:500;width:230px">Empty, loading, error</td><td class="mono" style="font-size:12px;width:270px">design/feedback.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">Live, Memory</td><td class="tx2" style="font-size:13.5px">Skeleton, EmptyState, ErrorState primitives. Error shows the x-request-id.</td></tr><tr><td style="font-weight:500;width:230px">Buttons, chips, switch, select, input</td><td class="mono" style="font-size:12px;width:270px">design/primitives.tsx</td><td class="mono tx3" style="font-size:12px;width:150px">all</td><td class="tx2" style="font-size:13.5px">Restyle in place; props unchanged.</td></tr></tbody></table></div>
+<h2 class="h4" style="margin:44px 0 14px">4. Rules to keep</h2>
+<div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Accent only for live states, the current question and the confirmed sentence. Primary buttons are light on dark.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Fragments are always muted mono with ellipses. Resolved sentences are always large sans with the faint glow.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Remove Instrument Serif and the amber, warm and beige tokens. Nothing serif anywhere.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">One level of nesting. Timeline, facts and hypotheses are rows; the fact detail sits inline under its step.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Content is visible by default. Hero animation and shimmer run only under prefers-reduced-motion: no-preference, and the static frame is the confirmed state.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Use faint (#7A7A82) for readable tertiary text; ghost (#5A5A62) fails AA and is for hollow dots and disabled glyphs.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Eval, Results and the model and date line read from generated/eval.json. The numbers on these boards were copied from the 2026-10-04 08:26 UTC live run for layout only.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">Settings keeps its current content and takes the new components; it is not redrawn here.</div><div style="padding:11px 0;border-top:1px solid var(--line);font-size:14px;color:var(--tx2)">GitHub star count on the hero button is a slot; fetch at build time or hide when unavailable.</div></div>
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":2450}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

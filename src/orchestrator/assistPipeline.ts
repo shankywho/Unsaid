@@ -1,4 +1,5 @@
 import { prisma } from '../db';
+import { buildConfirmQuestion, cleanConfirmedSentence } from '../lib/sentences';
 import { startRun } from '../tracing/tracer';
 import { runDag, out } from './dag';
 import { runAgent } from '../agents/runAgent';
@@ -378,8 +379,11 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
           const top = hypotheses[0];
           return {
             output: {
-              question: top.speaker_perspective_question,
-              finalSentence: top.sentence,
+              question: buildConfirmQuestion({
+                question: top.speaker_perspective_question,
+                sentence: top.sentence,
+              }),
+              finalSentence: cleanConfirmedSentence(top.sentence) ?? top.sentence,
             },
           };
         },

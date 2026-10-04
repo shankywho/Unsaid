@@ -1,4 +1,6 @@
 import type { LyzrChatRequest, LyzrClient } from './types';
+import { buildConfirmQuestion, isQuestion } from '../../lib/sentences';
+const stripTrail = (t: string) => t.trim().replace(/[.!?…\s]+$/, '');
 import type { AgentName } from '../../agents/names';
 
 export class MockLyzrClient implements LyzrClient {
@@ -254,7 +256,7 @@ export class MockLyzrClient implements LyzrClient {
               {
                 intent: sent,
                 sentence: sent,
-                speaker_perspective_question: `Do you mean: ${sent}?`,
+                speaker_perspective_question: buildConfirmQuestion({ sentence: sent }),
                 confidence: 0.92,
                 evidenceIds: [],
                 reasoning: 'Matched previously learned patient-specific utterance from word map',
@@ -1050,8 +1052,10 @@ export class MockLyzrClient implements LyzrClient {
         const sent = hypothesis.sentence || 'I need help.';
         const q =
           attempt === 1
-            ? hypothesis.speaker_perspective_question || `Do you mean ${sent}?`
-            : `Understood. Did you mean: ${sent}?`;
+            ? buildConfirmQuestion({ question: hypothesis.speaker_perspective_question, sentence: sent })
+            : isQuestion(sent)
+              ? buildConfirmQuestion({ sentence: sent })
+              : `Understood. Did you mean: ${stripTrail(sent)}?`;
 
         return JSON.stringify({
           question: q.length > 80 ? q.slice(0, 77) + '?' : q,

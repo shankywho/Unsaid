@@ -1,4 +1,5 @@
 import { prisma } from '../db';
+import { buildConfirmQuestion, cleanConfirmedSentence } from '../lib/sentences';
 import { redis } from '../redis';
 import { env } from '../config/env';
 import { adapters } from '../adapters';
@@ -109,7 +110,8 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
   if (answer === 'yes') {
     const confirmedIdx = conf.currentIndex;
     const currentHyp = hypotheses[confirmedIdx] || hypotheses[0];
-    const finalSentence = currentHyp?.sentence || conf.question;
+    const finalSentence =
+      cleanConfirmedSentence(currentHyp?.sentence) || currentHyp?.sentence || conf.question;
 
     let finalAudio: string | undefined;
     try {
@@ -173,7 +175,10 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
 
   if (nextIdx < hypotheses.length) {
     const nextHyp = hypotheses[nextIdx];
-    let nextQuestion = nextHyp.speaker_perspective_question;
+    let nextQuestion = buildConfirmQuestion({
+      question: nextHyp.speaker_perspective_question,
+      sentence: nextHyp.sentence,
+    });
     try {
       const composed = await runAgent(
         'confirmation_composer',
@@ -185,7 +190,7 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
         },
         { userId: conf.userId, runId: conf.runId, node: 'confirmation_composer' },
       );
-      nextQuestion = composed.question;
+      nextQuestion = buildConfirmQuestion({ question: composed.question, sentence: nextHyp.sentence });
     } catch {
       // Keep nextHyp.speaker_perspective_question
     }
