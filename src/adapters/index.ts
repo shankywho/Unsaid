@@ -29,9 +29,7 @@ export function createAdapters(mock: boolean = env.MOCK_EXTERNALS): Adapters {
   }
 
   const lyzrClient: LyzrClient =
-    env.GROQ_API_KEY && (!env.LYZR_AGENT_FRAGMENT_ID || env.LLM_PROVIDER === 'groq')
-      ? new GroqClient()
-      : new HttpLyzrClient();
+    env.LLM_PROVIDER === 'groq' && env.GROQ_API_KEY ? new GroqClient() : new HttpLyzrClient();
 
   const embedder: Embedder = env.OPENAI_API_KEY ? new OpenAIEmbedder() : new MockEmbedder(env.EMBEDDING_DIM);
 

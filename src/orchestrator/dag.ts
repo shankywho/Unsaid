@@ -1,5 +1,6 @@
 import type { StepMeta } from '../tracing/tracer';
 import { endStep, startStep } from '../tracing/tracer';
+import { backoffStorage } from '../lib/http';
 import { logger } from '../lib/logger';
 
 export type NodeResults = Record<string, NodeOutcome>;
@@ -79,15 +80,31 @@ export async function runDag(
         await endStep(stepId, ctx.runId, ctx.userId, node.name, 'SKIPPED', t0, { skipped: skipReason });
         return;
       }
+      const store = { backoffMs: 0 };
       try {
-        const r = await node.run(results);
+        const r = await backoffStorage.run(store, () => node.run(results));
         results[node.name] = { status: 'completed', output: r.output };
-        await endStep(stepId, ctx.runId, ctx.userId, node.name, 'COMPLETED', t0, r.output, r);
+        await endStep(stepId, ctx.runId, ctx.userId, node.name, 'COMPLETED', t0, r.output, {
+          ...r,
+          backoffMs: store.backoffMs,
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.warn({ node: node.name, runId: ctx.runId, err: message }, 'dag node failed');
         results[node.name] = { status: 'failed', error: message };
-        await endStep(stepId, ctx.runId, ctx.userId, node.name, 'FAILED', t0, undefined, {}, message);
+        await endStep(
+          stepId,
+          ctx.runId,
+          ctx.userId,
+          node.name,
+          'FAILED',
+          t0,
+          undefined,
+          {
+            backoffMs: store.backoffMs,
+          },
+          message,
+        );
       }
     })();
     started.set(node.name, p);

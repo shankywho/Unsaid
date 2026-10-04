@@ -1,4 +1,12 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { sleep } from './time';
+import { logger } from './logger';
+
+export interface BackoffContext {
+  backoffMs: number;
+}
+
+export const backoffStorage = new AsyncLocalStorage<BackoffContext>();
 
 export interface FetchOpts extends RequestInit {
   timeoutMs: number;
@@ -22,6 +30,12 @@ export async function fetchRetry(url: string, opts: FetchOpts): Promise<Response
         }
         const waitMs =
           !Number.isNaN(retrySec) && retrySec > 0 ? Math.ceil(retrySec * 1000) : 2000 * (attempt + 1);
+        const store = backoffStorage.getStore();
+        if (store) store.backoffMs += waitMs;
+        logger.info(
+          { waitMs, url, totalBackoffMs: store?.backoffMs },
+          '429 Rate limit backoff encountered (logged separately from step execution time)',
+        );
         if (attempt < retries) {
           await sleep(waitMs);
           continue;

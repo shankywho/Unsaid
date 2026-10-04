@@ -74,11 +74,14 @@ async function tryCreateLyzrAgent(
       body: JSON.stringify({
         name: `Unsaid - ${spec.name}`,
         description: spec.description,
-        system_prompt: prompt,
+        agent_instructions: prompt,
+        response_format: { type: 'json_object' },
+        provider_id: 'openai',
+        model: 'gpt-4o-mini',
+        top_p: 1,
         temperature: spec.temperature,
-        model: 'gpt-4o',
       }),
-      timeoutMs: 15_000,
+      timeoutMs: 25_000,
     });
 
     if (res.ok) {
@@ -137,10 +140,33 @@ export async function main(): Promise<void> {
   console.log('\n=====================================================');
   console.log('  Setup Summary & .env configuration                 ');
   console.log('=====================================================\n');
-  console.log('Paste the following agent IDs into your .env file:\n');
+  console.log('Configured Agent IDs:\n');
   for (const [envVar, val] of Object.entries(results)) {
     console.log(`${envVar}=${val}`);
   }
+
+  const envPath = path.resolve(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    let envContent = fs.readFileSync(envPath, 'utf8');
+    for (const [envVar, val] of Object.entries(results)) {
+      if (val && !val.startsWith('<')) {
+        const regex = new RegExp(`^${envVar}=.*$`, 'm');
+        if (regex.test(envContent)) {
+          envContent = envContent.replace(regex, `${envVar}=${val}`);
+        } else {
+          envContent += `\n${envVar}=${val}`;
+        }
+      }
+    }
+    if (/^LLM_PROVIDER=.*$/m.test(envContent)) {
+      envContent = envContent.replace(/^LLM_PROVIDER=.*$/m, 'LLM_PROVIDER=lyzr');
+    } else {
+      envContent += '\nLLM_PROVIDER=lyzr';
+    }
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    console.log('\n✓ Automatically synchronized all Lyzr Agent IDs to .env');
+  }
+
   console.log('\nPrompt source files reside in: src/agents/prompts/*.md\n');
 }
 

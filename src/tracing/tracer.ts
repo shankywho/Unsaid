@@ -1,6 +1,7 @@
 import type { Prisma, PipelineKind, RunStatus, StepStatus } from '@prisma/client';
 import { prisma } from '../db';
 import { bus } from './events';
+import { backoffStorage } from '../lib/http';
 
 export const preview = (v: unknown, max = 300): string => {
   const s = typeof v === 'string' ? v : (JSON.stringify(v) ?? '');
@@ -46,11 +47,14 @@ export async function finishRun(
   );
 }
 
+import { logger } from '../lib/logger';
+
 export interface StepMeta {
   agentId?: string;
   attempt?: number;
   input?: unknown;
   retrieval?: unknown;
+  backoffMs?: number;
 }
 
 export async function startStep(
@@ -77,7 +81,15 @@ export async function endStep(
   meta: StepMeta = {},
   error?: string,
 ): Promise<number> {
-  const latencyMs = Date.now() - startedAt;
+  const totalElapsed = Date.now() - startedAt;
+  const backoffMs = meta.backoffMs ?? backoffStorage.getStore()?.backoffMs ?? 0;
+  const latencyMs = Math.max(0, totalElapsed - backoffMs);
+  if (backoffMs > 0) {
+    logger.info(
+      { node, runId, latencyMs, backoffMs, totalElapsed },
+      'Step excluded 429 backoff time from latency',
+    );
+  }
   await prisma.step.update({
     where: { id: stepId },
     data: {
@@ -97,6 +109,7 @@ export async function endStep(
     node,
     agentId: meta.agentId,
     latencyMs,
+    backoffMs,
     status,
     outputPreview: output === undefined ? undefined : preview(output),
     retrieval: meta.retrieval,

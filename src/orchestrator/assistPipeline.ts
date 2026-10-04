@@ -29,6 +29,19 @@ export interface AssistPipelineInput {
 const AFFIRMATIVE_REGEX = /^(yes|yeah|yep|haan|ha|correct|hmm yes|mm-hm|sahi|true)$/i;
 const NEGATIVE_REGEX = /^(no|nope|nahi|na|galat|stop|false)$/i;
 
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
   runId?: string;
   confirmationId?: string;
@@ -97,11 +110,8 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
       },
       {
         name: 'fragment_analyze',
-        deps: ['classify'],
-        skip: (results) => {
-          const cls = out<{ kind: string }>(results, 'classify');
-          return cls?.kind !== 'FRAGMENT' ? `classified as ${cls?.kind ?? 'unknown'}` : null;
-        },
+        // Runs in parallel with classify at DAG start
+        deps: [],
         input: () => ({ text }),
         run: async () => {
           const analyst = await runAgent(
@@ -139,7 +149,8 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
       },
       {
         name: 'retrieve_wordmap',
-        deps: ['fragment_analyze'],
+        // Runs in parallel at DAG start
+        deps: [],
         skip: () => (!contextUsed ? 'context disabled' : null),
         input: () => ({ fragment: text }),
         run: async () => {
@@ -155,8 +166,15 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
       },
       {
         name: 'hypothesize',
-        deps: ['retrieve_memory', 'retrieve_wordmap'],
+        deps: ['classify', 'retrieve_memory', 'retrieve_wordmap'],
         allowFailedDeps: true,
+        skip: (results) => {
+          const cls = out<{ kind: string }>(results, 'classify');
+          if (cls && cls.kind !== 'FRAGMENT') {
+            return `classified as ${cls.kind}`;
+          }
+          return null;
+        },
         input: (results) => ({
           fragment: text,
           memoryCount: out<ScoredMemoryHit[]>(results, 'retrieve_memory')?.length ?? 0,
@@ -174,23 +192,78 @@ export async function runAssistPipeline(input: AssistPipelineInput): Promise<{
           const memoryHits = out<ScoredMemoryHit[]>(results, 'retrieve_memory') ?? [];
           const wordMapHits = out<ScoredWordMapHit[]>(results, 'retrieve_wordmap') ?? [];
 
-          const agentRes = await runAgent(
-            'intent_hypothesizer',
-            IntentHypothesizerOutputSchema,
-            {
-              fragment: text,
-              analyst,
-              memoryFacts: memoryHits.map((h) => ({
-                id: h.id,
-                type: h.type,
-                text: h.text,
-                score: h.score,
-              })),
-              wordMapHits,
-              now: new Date().toISOString(),
-            },
-            { userId, sessionId, runId, node: 'hypothesize' },
-          );
+          const payload = {
+            fragment: text,
+            analyst,
+            memoryFacts: memoryHits.map((h) => ({
+              id: h.id,
+              type: h.type,
+              text: h.text,
+              score: h.score,
+            })),
+            wordMapHits,
+            now: new Date().toISOString(),
+          };
+
+          let agentRes = await runAgent('intent_hypothesizer', IntentHypothesizerOutputSchema, payload, {
+            userId,
+            sessionId,
+            runId,
+            node: 'hypothesize',
+          });
+
+          // Diversity Enforcement: Reject and regenerate if any 2 hypotheses have embedding similarity > 0.9
+          if (agentRes.hypotheses.length >= 2) {
+            try {
+              const texts = agentRes.hypotheses.map((h) => `${h.intent}: ${h.sentence}`);
+              const vectors = await adapters().embedder.embed(texts);
+              let tooSimilar = false;
+              let maxSim = 0;
+
+              for (let i = 0; i < vectors.length; i++) {
+                for (let j = i + 1; j < vectors.length; j++) {
+                  const sim = cosineSimilarity(vectors[i], vectors[j]);
+                  if (sim > maxSim) maxSim = sim;
+                  if (sim > 0.9) {
+                    tooSimilar = true;
+                    break;
+                  }
+                }
+                if (tooSimilar) break;
+              }
+
+              if (tooSimilar) {
+                logger.warn(
+                  { maxSimilarity: Number(maxSim.toFixed(3)), count: agentRes.hypotheses.length },
+                  'Hypotheses lacked diversity (similarity > 0.9); regenerating distinct alternatives',
+                );
+
+                const regenerated = await runAgent(
+                  'intent_hypothesizer',
+                  IntentHypothesizerOutputSchema,
+                  {
+                    ...payload,
+                    diversityInstruction:
+                      'DIVERSITY REJECTION: Previous hypotheses had embedding similarity > 0.90. You MUST produce 3 clearly distinct hypotheses with different candidate intents. Each question must preserve its hypothesis intent exactly.',
+                  },
+                  { userId, sessionId, runId, node: 'hypothesize' },
+                );
+
+                if (regenerated.hypotheses.length > 0) {
+                  agentRes = regenerated;
+                }
+              }
+            } catch (embedErr: any) {
+              logger.warn({ err: embedErr.message }, 'Diversity embedding check skipped due to error');
+            }
+          }
+
+          // Preserve exact hypothesis intent in question
+          for (const h of agentRes.hypotheses) {
+            if (!h.speaker_perspective_question || h.speaker_perspective_question.trim().length === 0) {
+              h.speaker_perspective_question = `Do you mean: "${h.sentence}"?`;
+            }
+          }
 
           // Code-side sanitization: only keep valid evidence IDs
           const validMemoryIds = new Set(memoryHits.map((m) => m.id));

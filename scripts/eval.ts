@@ -17,14 +17,52 @@ interface EvalItem {
   requiresContext: boolean;
 }
 
-interface ModeResult {
+export interface StepLatencyStats {
+  node: string;
+  count: number;
+  p50Ms: number;
+  avgMs: number;
+  minMs: number;
+  maxMs: number;
+}
+
+export interface ModeResult {
   mode: string;
   top1: number;
   top3: number;
   avgLatencyMs: number;
+  p50LatencyMs: number;
   total: number;
   top1Hits: number;
   top3Hits: number;
+  stepStats: Record<string, StepLatencyStats>;
+}
+
+function computeStats(arr: number[]): { p50: number; avg: number; min: number; max: number } {
+  if (arr.length === 0) return { p50: 0, avg: 0, min: 0, max: 0 };
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const p50 = sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  const avg = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  return { p50, avg, min, max };
+}
+
+async function resetUserWordMap(userId: string): Promise<void> {
+  // Clear any existing word map points in Qdrant for this user
+  try {
+    await qdrant.delete(collections.wordmap, {
+      filter: { must: [{ key: 'userId', match: { value: userId } }] },
+    });
+  } catch (err: unknown) {
+    void err; // collection may not exist yet or have zero points
+  }
+  await prisma.wordMapEntry.deleteMany({ where: { userId } });
+
+  // Fixed baseline fixtures: "car" -> "walk", "Pri" -> "Priya"
+  await upsertSubstitution(userId, 'car', 'walk', 'SUBSTITUTION');
+  await upsertSubstitution(userId, 'Pri', 'Priya', 'NAME_ALIAS');
 }
 
 export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
@@ -102,35 +140,55 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
     }
   }
 
-  // Baseline substitutions
-  await upsertSubstitution(userOn.id, 'car', 'walk', 'SUBSTITUTION');
-  await upsertSubstitution(userOn.id, 'Pri', 'Priya', 'NAME_ALIAS');
-  await upsertSubstitution(userOff.id, 'car', 'walk', 'SUBSTITUTION');
-  await upsertSubstitution(userOff.id, 'Pri', 'Priya', 'NAME_ALIAS');
   console.log('✓ Seeding complete. Evaluating test set of', fragments.length, 'fragments...\n');
 
   async function evaluateMode(user: any, modeName: string): Promise<ModeResult> {
-    console.log(`Evaluating: [${modeName}] ...`);
+    console.log(`\nEvaluating: [${modeName}] ...`);
     let top1Hits = 0;
     let top3Hits = 0;
-    let totalLatency = 0;
+    const pipelineLatencies: number[] = [];
+    const stepRecords: Record<string, number[]> = {
+      classify: [],
+      fragment_analyze: [],
+      retrieve_memory: [],
+      retrieve_wordmap: [],
+      hypothesize: [],
+      compose_question: [],
+      eval_judge: [],
+    };
 
     for (let i = 0; i < fragments.length; i++) {
       const item = fragments[i];
+
+      // Leakage guard: reset word map strictly from fixed fixture before each fragment
+      await resetUserWordMap(user.id);
+
       await prisma.confirmation.updateMany({
         where: { userId: user.id, status: 'PENDING' },
         data: { status: 'EXPIRED' },
       });
-      const t0 = Date.now();
 
+      const t0 = Date.now();
       const assistRes = await runAssistPipeline({
         userId: user.id,
         text: item.fragment,
         source: 'SIMULATED',
       });
-
       const latency = Date.now() - t0;
-      totalLatency += latency;
+      pipelineLatencies.push(latency);
+
+      // Collect per-step latency from DB steps
+      if (assistRes.runId) {
+        const steps = await prisma.step.findMany({
+          where: { runId: assistRes.runId },
+        });
+        for (const s of steps) {
+          if (s.latencyMs !== null && s.latencyMs !== undefined) {
+            if (!stepRecords[s.node]) stepRecords[s.node] = [];
+            stepRecords[s.node].push(s.latencyMs);
+          }
+        }
+      }
 
       let hypotheses: HypothesisItem[] = [];
       if (assistRes.confirmationId) {
@@ -140,9 +198,13 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
         hypotheses = (conf?.hypotheses as unknown as HypothesisItem[]) || [];
       }
 
+      let top1Match = false;
+      let top3Match = false;
+
       if (hypotheses.length > 0) {
         // Judge top 1
         const top1 = hypotheses[0];
+        const tJudge0 = Date.now();
         const judgeTop1 = await runAgent(
           'eval_judge',
           EvalJudgeOutputSchema,
@@ -155,14 +217,17 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
           },
           { userId: user.id },
         );
+        stepRecords.eval_judge.push(Date.now() - tJudge0);
 
         if (judgeTop1.match) {
           top1Hits++;
           top3Hits++;
+          top1Match = true;
+          top3Match = true;
         } else {
-          // Check if top 2 or 3 match
-          let matchedTop3 = false;
+          // Check top 2 and 3
           for (const hyp of hypotheses.slice(1, 3)) {
+            const tJudgeNext0 = Date.now();
             const judge = await runAgent(
               'eval_judge',
               EvalJudgeOutputSchema,
@@ -175,44 +240,90 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
               },
               { userId: user.id },
             );
+            stepRecords.eval_judge.push(Date.now() - tJudgeNext0);
             if (judge.match) {
-              matchedTop3 = true;
+              top3Hits++;
+              top3Match = true;
               break;
             }
           }
-          if (matchedTop3) top3Hits++;
         }
       }
-      console.log(`  [${i + 1}/${fragments.length}] "${item.fragment}" (${latency}ms)`);
+
+      const matchLabel = top1Match ? 'Top-1 ✓' : top3Match ? 'Top-3 ✓' : '✗';
+      console.log(
+        `  [${i + 1}/${fragments.length}] "${item.fragment}" -> ${matchLabel} (assist: ${latency}ms)`,
+      );
     }
-    console.log(`\n✓ [${modeName}] complete.`);
 
     const total = fragments.length;
+    const pipeStats = computeStats(pipelineLatencies);
+    const stepStats: Record<string, StepLatencyStats> = {};
+
+    for (const [node, times] of Object.entries(stepRecords)) {
+      const stats = computeStats(times);
+      stepStats[node] = {
+        node,
+        count: times.length,
+        p50Ms: stats.p50,
+        avgMs: stats.avg,
+        minMs: stats.min,
+        maxMs: stats.max,
+      };
+    }
+
     return {
       mode: modeName,
       top1: Number((top1Hits / total).toFixed(2)),
       top3: Number((top3Hits / total).toFixed(2)),
-      avgLatencyMs: Math.round(totalLatency / total),
+      avgLatencyMs: pipeStats.avg,
+      p50LatencyMs: pipeStats.p50,
       total,
       top1Hits,
       top3Hits,
+      stepStats,
     };
   }
 
   const resultOn = await evaluateMode(userOn, 'context ON');
   const resultOff = await evaluateMode(userOff, 'context OFF');
 
-  // Format and print report
-  const table = [
-    'mode         top1   top3   avg_latency_ms',
-    `context ON   ${resultOn.top1.toFixed(2)}   ${resultOn.top3.toFixed(2)}   ${resultOn.avgLatencyMs}`,
-    `context OFF  ${resultOff.top1.toFixed(2)}   ${resultOff.top3.toFixed(2)}   ${resultOff.avgLatencyMs}`,
+  // Format accuracy summary table
+  const accuracyTable = [
+    'mode         top1   top3   p50_latency_ms   avg_latency_ms',
+    `context ON   ${resultOn.top1.toFixed(2)}   ${resultOn.top3.toFixed(2)}   ${resultOn.p50LatencyMs.toString().padEnd(16)} ${resultOn.avgLatencyMs}`,
+    `context OFF  ${resultOff.top1.toFixed(2)}   ${resultOff.top3.toFixed(2)}   ${resultOff.p50LatencyMs.toString().padEnd(16)} ${resultOff.avgLatencyMs}`,
+  ].join('\n');
+
+  // Format per-step latency table for context ON
+  const stepRows = Object.values(resultOn.stepStats).map((s) => {
+    const nodeCol = s.node.padEnd(25);
+    const p50Col = `${s.p50Ms}ms`.padEnd(12);
+    const avgCol = `${s.avgMs}ms`.padEnd(12);
+    const minCol = `${s.minMs}ms`.padEnd(10);
+    const maxCol = `${s.maxMs}ms`.padEnd(10);
+    const countCol = `${s.count}`;
+    return `${nodeCol} ${p50Col} ${avgCol} ${minCol} ${maxCol} ${countCol}`;
+  });
+
+  const stepTable = [
+    'Step / Node               p50          Avg          Min        Max        Count',
+    '------------------------- ------------ ------------ ---------- ---------- -----',
+    ...stepRows,
+    '------------------------- ------------ ------------ ---------- ---------- -----',
+    `TOTAL ASSIST PIPELINE     ${resultOn.p50LatencyMs}ms`.padEnd(38) +
+      `${resultOn.avgLatencyMs}ms`.padEnd(13) +
+      `p50 < 6s target: ${resultOn.p50LatencyMs < 6000 ? 'MET ✓' : 'EXCEEDED'}`,
   ].join('\n');
 
   console.log('\n=====================================================');
-  console.log('  EVALUATION RESULTS                                 ');
+  console.log('  EVALUATION ACCURACY BENCHMARK                      ');
   console.log('=====================================================\n');
-  console.log(table);
+  console.log(accuracyTable);
+  console.log('\n=====================================================');
+  console.log('  PER-STEP LATENCY BREAKDOWN (Context ON)            ');
+  console.log('=====================================================\n');
+  console.log(stepTable);
   console.log('\n=====================================================\n');
 
   // Save report to eval-results/
@@ -237,12 +348,21 @@ export async function runEval(): Promise<{ on: ModeResult; off: ModeResult }> {
 
 Ablation evaluation of personal context vector retrieval on fragmented speech reconstruction for expressive aphasia.
 
+## Accuracy Benchmark
+
 \`\`\`
-${table}
+${accuracyTable}
+\`\`\`
+
+## Per-Step Latency Breakdown (Context ON)
+
+\`\`\`
+${stepTable}
 \`\`\`
 
 - **Total Test Fragments:** ${fragments.length}
 - **Context Dependent:** ~70%
+- **Inference Engine:** Lyzr Studio v3 (OpenAI gpt-4o-mini backend)
 - **Evaluation Agent:** \`eval_judge\` via Lyzr
 `;
   fs.writeFileSync(mdPath, mdReport, 'utf8');

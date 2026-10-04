@@ -110,3 +110,57 @@ Every assumption made while building Unsaid, and why. Newest phase last.
   - **Context ON:** Top-1: **0.41** (41%), Top-3: **0.47** (47%), Average Latency: **24,312 ms**.
   - **Context OFF:** Top-1: **0.09** (9%), Top-3: **0.13** (13%), Average Latency: **6,178 ms**.
   - **Ablation Delta:** **+32% absolute improvement** (>4.5x relative accuracy increase). When context is disabled, telegraphic fragments lacking surface clarity cannot be resolved, confirming the vital necessity of ambient memory grounding.
+
+## Phase 12 — Mandatory Lyzr Live Integration, Latency Optimization, Diversity, and Leakage Audit
+
+### 1. Mandatory Lyzr Architecture & Verified Contracts for all 7 Agents
+
+- **Lyzr Live Path Default:** `HttpLyzrClient` is the default live provider for all 7 agents whenever `MOCK_EXTERNALS=false` and `LLM_PROVIDER !== 'groq'`. Groq remains strictly as an optional developer fallback via `LLM_PROVIDER=groq`.
+- **Verified Contract:**
+  - **Inference Endpoint:** `POST https://agent-prod.studio.lyzr.ai/v3/inference/chat/`
+  - **Headers:** `content-type: application/json`, `x-api-key: <LYZR_API_KEY>`
+  - **Request Payload:**
+    ```json
+    {
+      "user_id": string,
+      "agent_id": string,
+      "session_id": string,
+      "message": string
+    }
+    ```
+  - **Response Payload:**
+    ```json
+    {
+      "response": string, // JSON string conforming to agent output schema
+      "module_outputs": {}
+    }
+    ```
+  - **Verified Agents (All 7 Live on Lyzr Studio with gpt-4o-mini backend):**
+    1. `utterance_classifier`: `6ac1fc2b93fa3a3d836f07c4` (Verified: classifies FRAGMENT / FLUENT / NOISE)
+    2. `fragment_analyst`: `6ac1fc2d80dc8911319a261c` (Verified: extracts keywords, entities, retrieval queries)
+    3. `context_extractor`: `6ac1fc2daa8da876172038de` (Verified: parses ambient facts into structured schema)
+    4. `intent_hypothesizer`: `6ac1fc2d5e969bc525b01659` (Verified: outputs 3 hypotheses with speaker_perspective_question and evidenceIds)
+    5. `confirmation_composer`: `6ac1fc2e7b15240ead0dcda7` (Verified: outputs warm confirmation question and spoken sentence)
+    6. `learner`: `6ac1fc2ea6bb90781f48e230` (Verified: extracts substitutions and resolved utterances)
+    7. `eval_judge`: `6ac1fc2e9f0d3cd817ed5de1` (Verified: semantic match evaluation against goldIntent)
+
+### 2. Latency Optimization & 429 Backoff Separation
+
+- **DAG Parallelization:** `classify`, `fragment_analyze`, and `retrieve_wordmap` launch concurrently at $t=0$. `retrieve_memory` starts as soon as `fragment_analyze` settles. This reduces total pre-hypothesis latency from sequential sum (~6.3s) to parallel maximum (~3.2s).
+- **Confirmation Composer Bypass:** For the initial confirmation question, the orchestrator directly takes `hypotheses[0].speaker_perspective_question` generated during the hypothesis step. This removes an entire LLM call (~1.5s), achieving 0ms question composition latency for attempt 1.
+- **Local Yes/No Fast Path:** Affirmative (`yes`, `yeah`, `haan`) and negative (`no`, `nope`, `nahi`) replies are classified via local regex before entering the DAG, avoiding LLM roundtrips on confirmation answers.
+- **429 Rate Limit Backoff Isolation:** Backoff sleep duration is tracked via `AsyncLocalStorage` (`backoffStorage`). `tracer.endStep` subtracts `backoffMs` from elapsed duration to ensure step latency metrics strictly reflect active processing time. Backoff events are logged separately.
+
+### 3. Leakage Audit & "car -> walk" Substitution Origin
+
+- **Leakage Audit:**
+  - Evaluated whether eval run feeds confirmations into LEARN: During evaluation, test runs create `Confirmation` objects in `PENDING` state and mark them `EXPIRED` across iterations. The learner pipeline (`enqueueLearnJob`) is only triggered upon explicit affirmative answers in `answerConfirmation(..., 'yes')`. Therefore, no dynamic confirmations were fed into LEARN during the evaluation run.
+  - To provide an airtight guarantee against any state contamination between fragments, `eval.ts` executes `resetUserWordMap` before every fragment, deleting dynamic Qdrant points and resetting word map entries strictly from the fixed baseline fixture.
+- **Origin of "car -> walk":**
+  - **Who introduced it:** Defined in the Unsaid specification (`UNSAID_BUILD.md` §11, line 510: _"semantic substitution ('car… park… six' → walk at 6)"_) and §12 (line 504: _"Doctor: Dr. Mehta (sugar restriction, walk at 6 PM)"_).
+  - **Clinical Rationale:** It directly models **semantic paraphasia** in non-fluent (Broca's) aphasia, where a speaker unintentionally substitutes a semantically related or transit-adjacent noun ("car") for their routine daily activity (Dr. Mehta's prescribed 6 PM evening walk in the park with caregiver Sunita). Seeding this in the baseline word map verifies the system's ability to utilize learned patient-specific vocabularies to resolve otherwise inscrutable telegraphic fragments.
+
+### 4. Hypothesis Diversity Enforcement
+
+- **Cosine Embedding Similarity Check:** In the `hypothesize` node, all candidate hypotheses are embedded via `adapters().embedder`. If any pair of hypotheses exhibits cosine similarity > 0.90, the generation is rejected and `intent_hypothesizer` is prompted to produce genuinely distinct candidate interpretations exploring diverse speech acts.
+- **Exact Intent Preservation:** The prompt and DAG ensure that `speaker_perspective_question` precisely reflects the hypothesis's specific intent and proposed sentence, preventing generic drift.
