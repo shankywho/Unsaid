@@ -549,9 +549,33 @@ export function useAutoAudio(url?: string) {
   return { playing, blocked, replay };
 }
 
-function VoiceBar({ url }: { url?: string }) {
-  const { playing, blocked, replay } = useAutoAudio(url);
-  if (!url) return null;
+/** Speaks `text` with the browser's own voice (used when the server has no text-to-speech provider). */
+export function useBrowserSpeech(text: string | undefined, enabled: boolean) {
+  const [playing, setPlaying] = useState(false);
+  const speak = () => {
+    if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.onstart = () => setPlaying(true);
+    u.onend = () => setPlaying(false);
+    u.onerror = () => setPlaying(false);
+    window.speechSynthesis.speak(u);
+  };
+  useEffect(() => {
+    if (enabled) speak();
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
+  }, [text, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { playing, replay: speak };
+}
+
+function VoiceBar({ url, text, browserSpeech }: { url?: string; text?: string; browserSpeech?: boolean }) {
+  const audio = useAutoAudio(browserSpeech ? undefined : url);
+  const voice = useBrowserSpeech(text, !!browserSpeech);
+  if (!url && !browserSpeech) return null;
+  const { playing, blocked, replay } = browserSpeech ? { ...voice, blocked: false } : audio;
   return (
     <div className="my-6 flex items-center gap-3.5">
       <Waveform active={playing} />
@@ -631,7 +655,7 @@ export function ConversationPanel({
             <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> Spoken to caregiver
           </Chip>
         </div>
-        <VoiceBar url={conf.finalAudioUrl} />
+        <VoiceBar url={conf.finalAudioUrl} text={conf.finalSentence} browserSpeech={conf.browserSpeech} />
         {learn && <p className="text-[13px] leading-normal text-faint">Saved for next time.</p>}
       </Reveal>
     );
@@ -684,7 +708,7 @@ export function ConversationPanel({
         </span>
       </div>
       <h2 className="text-[30px] font-medium leading-[1.18] tracking-[-0.035em] text-ink">{conf.question}</h2>
-      <VoiceBar url={conf.audioUrl} />
+      <VoiceBar url={conf.audioUrl} text={conf.question} browserSpeech={conf.browserSpeech} />
       <div className="grid grid-cols-2 gap-3">
         <Button
           size="xl"

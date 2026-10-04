@@ -66,6 +66,8 @@ export interface ConfView {
   finalSentence?: string;
   finalAudioUrl?: string;
   fallbackQuestion?: string;
+  /** server audio is a silent placeholder: speak the text with the browser's voice instead */
+  browserSpeech?: boolean;
   askedAt?: string;
   /** ms between the question and the answer, from the two event timestamps */
   answeredMs?: number;
@@ -310,6 +312,7 @@ function applyEvent(s: LiveState, e: EventEnvelope): LiveState {
           index: num(d.currentIndex) ?? 0,
           count: num(d.hypothesesCount) ?? 3,
           status: 'pending',
+          browserSpeech: d.browserSpeech === true,
           askedAt: e.ts,
         },
       };

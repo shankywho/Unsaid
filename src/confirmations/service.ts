@@ -73,6 +73,7 @@ export async function createPendingConfirmation(params: {
       question,
       questionAudio,
       audioUrl: questionAudio ? `/v1/audio/${questionAudio}` : undefined,
+      browserSpeech: adapters().tts.silent === true,
       currentIndex: 0,
       hypothesesCount: hypotheses.length,
       hypotheses: hypotheses.map((h) => ({ intent: h.intent, sentence: h.sentence })),
@@ -154,6 +155,7 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
         finalSentence,
         finalAudio,
         audioUrl: finalAudio ? `/v1/audio/${finalAudio}` : undefined,
+        browserSpeech: adapters().tts.silent === true,
       },
       conf.runId,
     );
@@ -223,6 +225,7 @@ export async function answerConfirmation(confirmationId: string, answer: 'yes' |
         question: nextQuestion,
         questionAudio: nextAudio,
         audioUrl: nextAudio ? `/v1/audio/${nextAudio}` : undefined,
+        browserSpeech: adapters().tts.silent === true,
         currentIndex: nextIdx,
         hypothesesCount: hypotheses.length,
       },

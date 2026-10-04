@@ -31,6 +31,7 @@
     "start:dist": "node dist/src/index.js"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
     "@prisma/client": "^6.19.3",
     "@qdrant/js-client-rest": "^1.19.0",
     "bullmq": "^6.3.11",

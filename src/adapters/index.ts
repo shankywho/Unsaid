@@ -2,6 +2,7 @@ import { env } from '../config/env';
 import type { Embedder } from './embeddings/types';
 import { MockEmbedder } from './embeddings/mock';
 import { OpenAIEmbedder } from './embeddings/openai';
+import { LocalEmbedder } from './embeddings/local';
 import type { LyzrClient } from './lyzr/types';
 import { HttpLyzrClient } from './lyzr/httpClient';
 import { MockLyzrClient } from './lyzr/mock';
@@ -31,7 +32,9 @@ export function createAdapters(mock: boolean = env.MOCK_EXTERNALS): Adapters {
   const lyzrClient: LyzrClient =
     env.LLM_PROVIDER === 'groq' && env.GROQ_API_KEY ? new GroqClient() : new HttpLyzrClient();
 
-  const embedder: Embedder = env.OPENAI_API_KEY ? new OpenAIEmbedder() : new MockEmbedder(env.EMBEDDING_DIM);
+  const useOpenAI =
+    env.EMBEDDING_PROVIDER === 'openai' || (env.EMBEDDING_PROVIDER === 'auto' && !!env.OPENAI_API_KEY);
+  const embedder: Embedder = useOpenAI ? new OpenAIEmbedder() : new LocalEmbedder();
 
   const tts: Tts = env.OPENAI_API_KEY ? new OpenAITts() : new MockTts();
 

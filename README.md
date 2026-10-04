@@ -181,8 +181,12 @@ output is for plumbing only: `pnpm eval` refuses to run in mock mode unless `EVA
 
 ### Live mode
 
-Fill `LYZR_API_KEY`, `OPENAI_API_KEY`, set `MOCK_EXTERNALS=false`, `LLM_PROVIDER=lyzr`, run `pnpm lyzr:setup` (creates or updates the
+Fill `LYZR_API_KEY` (and optionally `OPENAI_API_KEY`), set `MOCK_EXTERNALS=false`, `LLM_PROVIDER=lyzr`, run `pnpm lyzr:setup` (creates or updates the
 7 agents and writes their ids to `.env`), then `pnpm seed`. Changing `EMBEDDING_DIM` needs `pnpm qdrant:reset`.
+
+**No OpenAI key?** Leave `OPENAI_API_KEY` empty. Embeddings then run locally (a small sentence model, downloaded once, 384-d) and the
+console speaks questions and confirmed sentences with the browser's own voice. After switching embedding provider run
+`pnpm qdrant:reset && pnpm seed` once, because the vector size changes.
 
 ### Useful commands
 

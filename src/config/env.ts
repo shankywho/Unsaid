@@ -43,6 +43,8 @@ const schema = z.object({
   LLM_PROVIDER: z.enum(['lyzr', 'groq', 'mock']).default('groq'),
 
   OPENAI_API_KEY: z.string().default(''),
+  /** auto: OpenAI when OPENAI_API_KEY is set, otherwise a local sentence-embedding model (no key needed). */
+  EMBEDDING_PROVIDER: z.enum(['auto', 'openai', 'local']).default('auto'),
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
   EMBEDDING_DIM: z.coerce.number().int().positive().default(1536),
   TTS_MODEL: z.string().default('tts-1'),
@@ -75,6 +77,9 @@ const schema = z.object({
   ENABLE_DOCS: bool, // force /docs on in production
 });
 
+export const LOCAL_EMBEDDING_DIM = 384;
+export const LOCAL_EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
+
 export type Env = z.infer<typeof schema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -84,6 +89,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment: ${msg}`);
   }
   const e = parsed.data;
+  // The local model is 384-dimensional; Qdrant collections must match it.
+  if (
+    !e.MOCK_EXTERNALS &&
+    (e.EMBEDDING_PROVIDER === 'local' || (e.EMBEDDING_PROVIDER === 'auto' && !e.OPENAI_API_KEY))
+  )
+    e.EMBEDDING_DIM = LOCAL_EMBEDDING_DIM;
   if (e.NODE_ENV === 'production') {
     const problems: string[] = [];
     if (e.API_KEY === 'dev-key' || e.API_KEY.length < 16)
